@@ -733,10 +733,7 @@
     <li><a href="#skills">skills</a></li>
     <li><a href="#contact">contact</a></li>
   </ul>
-  <div class="nav-status">
-    <div class="status-dot"></div>
-    open to opportunities
-  </div>
+
 </nav>
 
 <!-- HERO -->
@@ -746,7 +743,7 @@
     <h1 class="hero-name">Angel<br><span class="accent">Medina</span></h1>
     <p class="hero-title">NETWORK ENGINEER &nbsp;/&nbsp; SECURITY PRACTITIONER &nbsp;/&nbsp; CCNP CANDIDATE</p>
     <p class="hero-bio">
-      Enterprise network engineer at Pace University managing 1,800+ APs, 1,000+ switches, and campus-wide security infrastructure across NYC and Westchester. Security intern at UniCredit NY. Currently pursuing CCNP ENCOR (exam April 18, 2026).
+      Enterprise network engineer at Pace University managing 1,800+ APs, 1,000+ switches, and campus-wide security infrastructure across NYC and Westchester. Currently pursuing CCNP ENCOR (exam April 18, 2026).
     </p>
     <div class="hero-certs">
       <span class="cert-badge">CompTIA A+</span>
@@ -772,26 +769,6 @@
   <h2 class="section-title">Experience</h2>
 
   <div class="timeline">
-
-    <div class="timeline-item">
-      <div class="timeline-meta">
-        <span class="timeline-role">Security Intern</span>
-        <span class="timeline-company">UniCredit · New York Branch</span>
-        <span class="timeline-period">Jan 2026 – Jun 2026</span>
-      </div>
-      <p class="timeline-desc">
-        Supporting ISO and CISO on access management, application security, and regulatory compliance.
-        Working within Federal Reserve and NYDFS Part 500 frameworks. Contributing to BC/DR activities
-        and internal security initiatives at the enterprise banking level.
-      </p>
-      <div class="timeline-tags">
-        <span class="tag">NYDFS Part 500</span>
-        <span class="tag">Access Management</span>
-        <span class="tag">BC/DR</span>
-        <span class="tag">AppSec</span>
-        <span class="tag cyan">Federal Reserve Compliance</span>
-      </div>
-    </div>
 
     <div class="timeline-item">
       <div class="timeline-meta">
@@ -854,13 +831,12 @@
       <span class="terminal-title">bash — lab-environment</span>
     </div>
     <div class="terminal-body">
-      <div class="t-line"><span class="t-prompt">❯</span><span class="t-dir">~/homelab</span><span class="t-cmd">&nbsp;ls -la</span></div>
-      <div class="t-line"><span class="t-out">drwxr-xr-x  honeypot-cluster/</span></div>
-      <div class="t-line"><span class="t-out">drwxr-xr-x  splunk-siem/</span></div>
-      <div class="t-line"><span class="t-out">drwxr-xr-x  malware-sandbox/</span></div>
+      <div class="t-line"><span class="t-prompt">❯</span><span class="t-dir">~/labs</span><span class="t-cmd">&nbsp;ls -la</span></div>
       <div class="t-line"><span class="t-out">drwxr-xr-x  cml-encor-topology/</span></div>
-      <div class="t-line"><span class="t-prompt">❯</span><span class="t-dir">~/homelab</span><span class="t-cmd">&nbsp;cat status.txt</span></div>
-      <div class="t-line"><span class="t-out t-comment"># All systems operational. ENCOR lab active.</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  eve-ng-labs/</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  network-automation/</span></div>
+      <div class="t-line"><span class="t-prompt">❯</span><span class="t-dir">~/labs</span><span class="t-cmd">&nbsp;cat status.txt</span></div>
+      <div class="t-line"><span class="t-out t-comment"># ENCOR exam April 18 2026. Labs active daily.</span></div>
     </div>
   </div>
 
@@ -878,12 +854,12 @@
 
     <div class="project-card">
       <div class="project-header">
-        <div class="project-icon">&#9650;</div>
+        <div class="project-icon">&#9670;</div>
         <span class="project-arrow"></span>
       </div>
-      <div class="project-name">Honeypot + Splunk SIEM</div>
-      <p class="project-desc">Home lab deployment of T-Pot honeypot cluster with Splunk SIEM integration. Capturing and indexing real-world attack telemetry for threat analysis and detection rule development.</p>
-      <div class="project-status status-active">● active / home lab</div>
+      <div class="project-name">ENCOR CML Topology</div>
+      <p class="project-desc">Multi-domain CML lab covering all ENCOR domains: OSPF multi-area, EIGRP (named mode), BGP (iBGP/eBGP, route reflectors, confederations), SDA, NETCONF/RESTCONF, and EEM automation.</p>
+      <div class="project-status status-active">● active / CML</div>
     </div>
 
     <div class="project-card">
@@ -891,19 +867,9 @@
         <div class="project-icon">&#9632;</div>
         <span class="project-arrow"></span>
       </div>
-      <div class="project-name">Malware Analysis Sandbox</div>
-      <p class="project-desc">Isolated sandboxed environment for dynamic malware analysis. Designed for behavioral analysis of suspicious binaries using memory forensics and network traffic capture.</p>
-      <div class="project-status status-active">● active / home lab</div>
-    </div>
-
-    <div class="project-card">
-      <div class="project-header">
-        <div class="project-icon">&#9670;</div>
-        <span class="project-arrow"></span>
-      </div>
-      <div class="project-name">ENCOR CML Topology</div>
-      <p class="project-desc">Multi-domain CML lab covering all ENCOR domains: OSPF multi-area, EIGRP (named mode), BGP (iBGP/eBGP, route reflectors, confederations), SDA, NETCONF/RESTCONF, and EEM automation.</p>
-      <div class="project-status status-active">● active / exam prep</div>
+      <div class="project-name">EVE-NG Labs</div>
+      <p class="project-desc">Supplemental ENCOR lab environment in EVE-NG covering SD-WAN, SDA fabric design, QoS, and multicast — topics requiring additional vendor images beyond CML's default library.</p>
+      <div class="project-status status-active">● active / EVE-NG</div>
     </div>
 
   </div>
@@ -977,10 +943,10 @@
       <div class="skill-group-title">Labs & Study</div>
       <ul class="skill-list">
         <li>Cisco Modeling Labs (CML)</li>
-        <li>T-Pot honeypot cluster</li>
-        <li>Malware sandbox</li>
+        <li>EVE-NG</li>
         <li>INE Premium / Skill Dive</li>
         <li>Boson NetSim</li>
+        <li>GNS3</li>
       </ul>
     </div>
 
@@ -1066,9 +1032,9 @@
         <span class="contact-link-label">GitHub</span>
         github.com/amedinaus
       </a>
-      <a class="contact-link" href="mailto:hello@amedina.net">
+      <a class="contact-link" href="mailto:angel.medina.us@gmail.com">
         <span class="contact-link-label">Email</span>
-        hello@amedina.net
+        angel.medina.us@gmail.com
       </a>
     </div>
   </div>
