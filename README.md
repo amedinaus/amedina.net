@@ -8,7 +8,7 @@ Live at [amedina.net](https://amedina.net)
 
 | File | Purpose |
 |------|---------|
-| `index.html` | Entire site — single file |
+| `index.html` | Web site |
 | `Angel_Resume.pdf` | Downloadable resume |
 | `robots.txt` | Search engine crawl rules |
 | `sitemap.xml` | Sitemap for Google Search Console |
