@@ -1,0 +1,1656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angel Medina — Network Engineer & Security Practitioner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --bg-card: #0d1117;
+    --bg-elevated: #161b22;
+    --border: #21262d;
+    --border-bright: #30363d;
+    --green: #39d353;
+    --green-dim: #196127;
+    --green-glow: rgba(57, 211, 83, 0.12);
+    --green-subtle: rgba(57, 211, 83, 0.06);
+    --cyan: #58d9f5;
+    --amber: #e6a817;
+    --text-primary: #e6edf3;
+    --text-secondary: #8b949e;
+    --text-muted: #484f58;
+    --mono: 'JetBrains Mono', monospace;
+    --display: 'Syne', sans-serif;
+    --radius: 6px;
+    --radius-lg: 10px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; overflow-x: hidden; }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    background: rgba(8, 12, 16, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--green);
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .nav-logo span { color: var(--text-secondary); font-weight: 300; }
+
+  nav ul {
+    list-style: none;
+    display: flex;
+    gap: 2rem;
+  }
+
+  nav a {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+  }
+
+  nav a:hover { color: var(--green); }
+
+  .nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(57,211,83,0.4); }
+    50% { opacity: 0.8; box-shadow: 0 0 0 4px rgba(57,211,83,0); }
+  }
+
+  /* ── LAYOUT ── */
+  main { padding-top: 56px; }
+
+  section {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 80px 2rem;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: calc(100vh - 56px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    max-width: 100%;
+    padding: 3.5rem 2rem 2rem;
+  }
+
+  .hero-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 0 2rem;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    grid-template-rows: auto;
+    gap: 0 3rem;
+    align-items: start;
+  }
+
+  .hero-left { grid-column: 1; }
+  .hero-right { grid-column: 2; padding-top: 0.5rem; }
+
+  /* Stats panel */
+  .stats-panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    font-size: 11px;
+  }
+
+  .stats-bar {
+    background: var(--bg-elevated);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .stats-bar::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+
+  .stat-label {
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    font-size: 10px;
+  }
+
+  .stat-value {
+    color: var(--green);
+    font-weight: 500;
+    font-size: 10px;
+  }
+
+  .stat-value.cyan { color: var(--cyan); }
+  .stat-value.amber { color: var(--amber); }
+  .stat-value.white { color: var(--text-primary); }
+
+  @media (max-width: 768px) {
+    .hero-inner {
+      grid-template-columns: 1fr;
+      padding: 0 1.25rem;
+    }
+    .hero-right { display: none; }
+  }
+
+  .hero-prompt {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    letter-spacing: 0.05em;
+  }
+
+  .hero-prompt::before { content: '$ '; color: var(--green); }
+
+  .hero-name {
+    font-family: var(--display);
+    font-size: clamp(36px, 7vw, 72px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 0.5rem;
+    margin-left: 4px;
+  }
+
+  .hero-name .name-first { display: block; color: var(--text-primary); }
+  .hero-name .accent { display: block; color: var(--green); }
+
+  .hero-title {
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 0.08em;
+    margin-bottom: 2rem;
+    font-weight: 300;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 768px) {
+    .hero-title {
+      white-space: normal;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-title {
+      white-space: normal;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+    }
+  }
+
+  .hero-bio {
+    max-width: 560px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.8;
+    margin-bottom: 2.5rem;
+    border-left: 2px solid var(--green-dim);
+    padding-left: 1rem;
+  }
+
+  .hero-certs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 2.5rem;
+  }
+
+  .cert-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-bright);
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    transition: border-color 0.2s, color 0.2s;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .cert-badge:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  .cert-badge.active {
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+
+  .cert-badge.active::before { content: '⏳ '; }
+
+  .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+  .btn {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    padding: 10px 20px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--green);
+    color: #000;
+    border: 1px solid var(--green);
+  }
+
+  .btn-primary:hover {
+    background: #4ef570;
+    box-shadow: 0 0 20px rgba(57,211,83,0.25);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-bright);
+  }
+
+  .btn-outline:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* Grid bg decoration */
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 50%;
+    height: 100%;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: linear-gradient(to left, rgba(0,0,0,0.4) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: var(--green);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-label::before { content: '//'; color: var(--text-muted); }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: clamp(24px, 4vw, 36px);
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 2.5rem;
+    color: var(--text-primary);
+  }
+
+  /* ── EXPERIENCE ── */
+  .timeline { position: relative; }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 8px;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--green), transparent);
+  }
+
+  .timeline-item {
+    padding-left: 2rem;
+    padding-bottom: 3rem;
+    position: relative;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: 8px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--green);
+  }
+
+  .timeline-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+  }
+
+  .timeline-role {
+    font-family: var(--display);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .timeline-company {
+    font-size: 12px;
+    color: var(--cyan);
+    letter-spacing: 0.05em;
+  }
+
+  .timeline-period {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: auto;
+    letter-spacing: 0.05em;
+  }
+
+  .timeline-desc {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.8;
+    margin-top: 8px;
+  }
+
+  .timeline-desc li {
+    position: relative;
+    padding-left: 14px;
+    margin-bottom: 4px;
+  }
+
+  .timeline-desc li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--green);
+  }
+
+  .timeline-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .tag {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: var(--green-subtle);
+    color: var(--green);
+    border: 1px solid var(--green-dim);
+  }
+
+  .tag.cyan {
+    background: rgba(88, 217, 245, 0.06);
+    color: var(--cyan);
+    border-color: rgba(88, 217, 245, 0.2);
+  }
+
+  /* ── PROJECTS ── */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .project-card {
+    background: var(--bg-card);
+    padding: 1.5rem;
+    transition: background 0.2s;
+    position: relative;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+
+  .project-card:hover { background: var(--bg-elevated); }
+
+  .project-card:hover .project-arrow { opacity: 1; transform: translate(2px, -2px); }
+
+  .project-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+  }
+
+  .project-icon {
+    font-size: 20px;
+    width: 36px; height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius);
+    background: var(--green-subtle);
+    border: 1px solid var(--green-dim);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .project-arrow {
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: all 0.2s;
+  }
+
+  .project-name {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+
+  .project-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .project-status {
+    margin-top: 12px;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+  }
+
+  .status-live { color: var(--green); }
+  .status-active { color: var(--amber); }
+
+  /* ── SKILLS ── */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+  }
+
+  .skill-group {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    transition: border-color 0.2s;
+  }
+
+  .skill-group:hover { border-color: var(--border-bright); }
+
+  .skill-group-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--green);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .skill-group-title svg {
+    width: 12px; height: 12px;
+    stroke: currentColor;
+    fill: none;
+  }
+
+  .skill-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .skill-list li {
+    font-size: 11px;
+    color: var(--text-secondary);
+    padding-left: 12px;
+    position: relative;
+  }
+
+  .skill-list li::before {
+    content: '›';
+    position: absolute;
+    left: 0;
+    color: var(--text-muted);
+  }
+
+  /* ── EDUCATION ── */
+  .edu-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .edu-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+  }
+
+  .edu-degree {
+    font-family: var(--display);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .edu-school {
+    font-size: 12px;
+    color: var(--cyan);
+    margin-bottom: 2px;
+  }
+
+  .edu-year {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* ── CONTACT ── */
+  .contact-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .contact-links {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .contact-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .contact-link:hover { color: var(--green); }
+
+  .contact-link-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    min-width: 60px;
+  }
+
+  /* ── TERMINAL WIDGET ── */
+  .terminal {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .terminal-bar {
+    background: var(--bg-elevated);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #ff5f57; }
+  .dot-yellow { background: #febc2e; }
+  .dot-green { background: #28c840; }
+
+  .terminal-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-left: 4px;
+  }
+
+  .terminal-body {
+    padding: 1.25rem;
+    font-size: 12px;
+    line-height: 2;
+  }
+
+  .t-line { display: flex; gap: 8px; }
+  .t-prompt { color: var(--green); user-select: none; }
+  .t-dir { color: var(--cyan); }
+  .t-cmd { color: var(--text-primary); }
+  .t-out { color: var(--text-secondary); padding-left: 1rem; }
+  .t-comment { color: var(--text-muted); }
+
+  /* ── CERT PROGRESS ── */
+  .cert-progress {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  .cert-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cert-item:last-child { border-bottom: none; }
+
+  .cert-check {
+    width: 18px; height: 18px;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .cert-check.done {
+    background: var(--green-dim);
+    border: 1px solid var(--green);
+    color: var(--green);
+  }
+
+  .cert-check.progress {
+    background: rgba(230,168,23,0.1);
+    border: 1px solid var(--amber);
+    color: var(--amber);
+  }
+
+  .cert-name {
+    font-size: 12px;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .cert-date {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 2rem;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  footer span { color: var(--green); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    nav ul { display: none; }
+    .edu-grid { grid-template-columns: 1fr; }
+    .contact-block { flex-direction: column; }
+    .hero::after { display: none; }
+    .hero { padding: 4rem 1.25rem 2rem; }
+    .hero-name { font-size: clamp(28px, 11vw, 52px); }
+    .hero-title { white-space: normal; font-size: 11px; letter-spacing: 0.06em; }
+    section { padding: 40px 1.25rem; }
+    .section-title { margin-bottom: 1.5rem; }
+  }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes glitch {
+    0%   { clip-path: inset(40% 0 61% 0); transform: translate(-4px, 0); }
+    20%  { clip-path: inset(92% 0 1% 0);  transform: translate(4px, 0); }
+    40%  { clip-path: inset(43% 0 50% 0); transform: translate(-2px, 0); }
+    60%  { clip-path: inset(25% 0 58% 0); transform: translate(2px, 0); }
+    80%  { clip-path: inset(54% 0 7% 0);  transform: translate(-4px, 0); }
+    100% { clip-path: inset(58% 0 43% 0); transform: translate(0); }
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @keyframes scanline {
+    0% { transform: translateY(-100%); }
+    100% { transform: translateY(100vh); }
+  }
+
+  @keyframes borderPulse {
+    0%, 100% { border-color: var(--border); }
+    50% { border-color: var(--green-dim); }
+  }
+
+  @keyframes terminalType {
+    from { width: 0; }
+    to { width: 100%; }
+  }
+
+  /* Hero — no animations, instant render */
+  .hero-left { opacity: 1; }
+  .hero-right { opacity: 1; }
+
+  /* CLI Hero Terminal */
+  .cli-hero {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 2.5rem;
+    max-width: 640px;
+  }
+
+  .cli-bar {
+    background: var(--bg-elevated);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .cli-title {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    margin-left: 4px;
+  }
+
+  .cli-body {
+    padding: 1.25rem;
+    font-size: 12px;
+    line-height: 2;
+    min-height: 220px;
+  }
+
+  .cli-line {
+    display: block;
+    opacity: 0;
+  }
+
+  .cli-line.typed { opacity: 1; }
+
+  .cli-prompt-user { color: var(--green); }
+  .cli-prompt-enable { color: var(--green); }
+  .cli-prompt-priv { color: var(--green); }
+  .cli-output { color: var(--text-secondary); }
+  .cli-comment { color: #a0aab4; }
+  .cli-key { color: var(--green); }
+  .cli-val { color: var(--text-primary); }
+
+  .cli-cursor {
+    display: inline-block;
+    width: 7px; height: 13px;
+    background: var(--green);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+    margin-left: 2px;
+  }
+
+  /* Blink cursor */
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Scroll reveal */
+  .reveal {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Staggered timeline reveals */
+  .timeline-item { transition: opacity 0.5s ease, transform 0.5s ease; }
+
+  /* Nav link underline draw */
+  nav a {
+    position: relative;
+  }
+  nav a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0;
+    width: 0; height: 1px;
+    background: var(--green);
+    transition: width 0.3s ease;
+  }
+  nav a:hover::after { width: 100%; }
+
+  /* Project card lift */
+  .project-card {
+    transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  }
+  .project-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Cert item hover */
+  a.cert-item:hover .cert-name {
+    color: var(--green);
+  }
+  a.cert-item { transition: background 0.15s; }
+  a.cert-item:hover { background: var(--green-subtle); border-radius: var(--radius); }
+
+  /* Skill group pulse border on hover */
+  .skill-group {
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .skill-group:hover {
+    border-color: var(--green-dim);
+    transform: translateY(-2px);
+  }
+
+  /* Section label slide in */
+  .section-label {
+    overflow: hidden;
+  }
+
+  /* Terminal line typing effect */
+  .t-cmd {
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  /* Contact link arrow */
+  .contact-link::after {
+    content: ' →';
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    display: inline-block;
+    transform: translateX(-4px);
+    color: var(--green);
+  }
+  .contact-link:hover::after {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+
+  /* Edu card hover */
+  .edu-card {
+    transition: border-color 0.3s, transform 0.2s;
+  }
+  .edu-card:hover {
+    border-color: var(--green-dim);
+    transform: translateY(-2px);
+  }
+
+  /* Btn pulse on primary */
+  .btn-primary {
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  .btn-primary:hover::after {
+    transform: translateX(0);
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+    max-width: 960px;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">AM<span>.net</span></a>
+  <ul>
+    <li><a href="#experience">experience</a></li>
+    <li><a href="#projects">projects</a></li>
+    <li><a href="#skills">skills</a></li>
+    <li><a href="#contact">contact</a></li>
+  </ul>
+
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <h1 class="hero-name"><span class="name-first">Angel</span><span class="accent">Medina</span></h1>
+      <p class="hero-title">NETWORK ENGINEER &nbsp;/&nbsp; SECURITY PRACTITIONER &nbsp;/&nbsp; CCNP CANDIDATE</p>
+
+      <div class="cli-hero">
+        <div class="cli-bar">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+          <span class="cli-title">summary.amedina.net — ssh angel@10.0.0.1</span>
+        </div>
+        <div class="cli-body" id="cli-body">
+          <span class="cli-cursor" id="cli-cursor"></span>
+        </div>
+      </div>
+
+      <div class="hero-certs">
+        <a href="https://www.credly.com/earner/earned/badge/4769b483-5f8d-4adc-8eec-58275b3cd70a" target="_blank" class="cert-badge">CompTIA A+</a>
+        <a href="https://www.credly.com/earner/earned/badge/6ff56941-e988-4fca-a030-949058f1249f" target="_blank" class="cert-badge">Network+</a>
+        <a href="https://www.credly.com/earner/earned/badge/89824662-8069-43a4-8e94-96a917dc7d20" target="_blank" class="cert-badge">Security+</a>
+        <a href="https://www.credly.com/earner/earned/badge/338ab062-820a-401c-8b35-72cb1800b393" target="_blank" class="cert-badge">CIOS</a>
+        <a href="https://www.credly.com/earner/earned/badge/4eb2b9ac-f4dc-43ba-99c4-3d170ed8765b" target="_blank" class="cert-badge">CSIS</a>
+        <a href="https://www.credly.com/earner/earned/badge/bf38d2cb-577e-4703-9f5c-6984c234b9e4" target="_blank" class="cert-badge">CCNA</a>
+        <a href="https://www.credly.com/earner/earned/badge/8035ac55-5dad-429f-a649-06bf81473830" target="_blank" class="cert-badge">AWS CCP</a>
+        <span class="cert-badge active">CCNP ENCOR</span>
+        <span class="cert-badge active">CCNP ENARSI</span>
+      </div>
+      <div class="hero-actions">
+        <a href="#experience" class="btn btn-primary">view experience →</a>
+        <a href="Angel_Resume.pdf" download class="btn btn-outline">↓ resume</a>
+        <a href="https://www.linkedin.com/in/angel-medina-us/" target="_blank" class="btn btn-outline">LinkedIn</a>
+        <a href="https://github.com/amedinaus" target="_blank" class="btn btn-outline">GitHub</a>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="stats-panel">
+        <div class="stats-bar">show version</div>
+        <div class="stat-row">
+          <span class="stat-label">uptime</span>
+          <span class="stat-value" id="uptime-counter">calculating...</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">users supported</span>
+          <span class="stat-value">14,000+</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">switches</span>
+          <span class="stat-value">~1,000</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">access points</span>
+          <span class="stat-value">1,800+</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">performance</span>
+          <span class="stat-value">#1 dept / top 5 university</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">automation</span>
+          <span class="stat-value">70%+ deploy time</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">ENCOR exam</span>
+          <span class="stat-value amber" id="exam-countdown">Apr 18, 2026</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- EXPERIENCE -->
+<section id="experience">
+  <p class="section-label">CAREER</p>
+  <h2 class="section-title">Experience</h2>
+
+  <div class="timeline">
+
+    <div class="timeline-item">
+      <div class="timeline-meta">
+        <span class="timeline-role">Senior Network Engineer</span>
+        <span class="timeline-company">Pace University</span>
+        <span class="timeline-period">Sep 2025 – Present</span>
+      </div>
+      <ul class="timeline-desc" style="list-style:none;padding:0;">
+        <li>Leading enterprise infrastructure modernization — replacing legacy Catalyst 2960X/S with standardized 9300 stacks, validating golden images, and executing minimal-downtime migrations</li>
+        <li>Primary escalation point for outages, conducting root-cause analysis and driving long-term stability improvements</li>
+        <li>Assisting with Cisco ACI operations including APIC upgrades, controller lifecycle tasks, fabric discovery via LLDP, and multi-pod connectivity validation</li>
+        <li>Producing Visio documentation for physical rack layouts, L2/L3 topology, WAN interconnects, and site-to-site connectivity to support audits and troubleshooting</li>
+        <li>Performing advanced wireless optimization using 7Signal and AirMagnet, identifying RF gaps and improving coverage across high-density buildings</li>
+      </ul>
+      <div class="timeline-tags">
+        <span class="tag">Catalyst 9300/9400/9500</span>
+        <span class="tag">Cisco ACI / APIC</span>
+        <span class="tag">Firepower FTD/FMC</span>
+        <span class="tag">AirMagnet / 7Signal</span>
+        <span class="tag cyan">Microsoft Visio</span>
+        <span class="tag cyan">Root Cause Analysis</span>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-meta">
+        <span class="timeline-role">Network Engineer</span>
+        <span class="timeline-company">Pace University</span>
+        <span class="timeline-period">Apr 2023 – Aug 2025</span>
+      </div>
+      <ul class="timeline-desc" style="list-style:none;padding:0;">
+        <li>Managed network infrastructure for 14,000+ students across 3 campuses — 9800 WLCs, 1,835 APs, 260 switch stacks (~1,000 switches), Cisco ISE/802.1X, Firepower 9000, and Catalyst Center</li>
+        <li>Led multi-campus AP refresh replacing legacy 2602/2702 models with 9120/9130/9164/9166 across all sites</li>
+        <li>Developed Python/Netmiko automation reducing deployment time by 70%+ — bulk compliance checks, AAA standardization, config backups, and Jinja2-templated switch deployments</li>
+        <li>Designed VLAN configurations in collaboration with departments to meet business needs and security policies</li>
+        <li>Presented network performance, security, and availability reports to senior leadership with actionable recommendations</li>
+      </ul>
+      <div class="timeline-tags">
+        <span class="tag">Cisco 9800 WLC</span>
+        <span class="tag">ISE / 802.1X</span>
+        <span class="tag">Firepower 9000</span>
+        <span class="tag">Catalyst Center</span>
+        <span class="tag">OSPF / BGP / VRF</span>
+        <span class="tag">Python / Netmiko</span>
+        <span class="tag cyan">Jinja2 Templates</span>
+        <span class="tag cyan">CoPP / SISF</span>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-meta">
+        <span class="timeline-role">Technical Support Specialist</span>
+        <span class="timeline-company">Pace University</span>
+        <span class="timeline-period">Sep 2022 – Mar 2023</span>
+      </div>
+      <ul class="timeline-desc" style="list-style:none;padding:0;">
+        <li>Ranked #1 in ticket resolution across Westchester and Haub Law campuses</li>
+        <li>Participated in on-site client meetings to analyze and diagnose hardware and software issues, delivering expert troubleshooting and effective solutions</li>
+        <li>Collaborated with management to create disk images for Windows and Mac, implement security initiatives, establish departmental workflows, and manage projects</li>
+        <li>Provided ongoing monitoring and support for classrooms and labs using Active Directory, Group Policy, and SCCM</li>
+      </ul>
+      <div class="timeline-tags">
+        <span class="tag">SCCM</span>
+        <span class="tag">JAMF</span>
+        <span class="tag">Active Directory</span>
+        <span class="tag">Group Policy</span>
+        <span class="tag cyan">Technical Docs</span>
+      </div>
+    </div>
+
+    <div class="timeline-item">
+      <div class="timeline-meta">
+        <span class="timeline-role">Desktop Support Specialist</span>
+        <span class="timeline-company">Pace University</span>
+        <span class="timeline-period">Oct 2021 – Aug 2022</span>
+      </div>
+      <ul class="timeline-desc" style="list-style:none;padding:0;">
+        <li>Provided advanced technical support for administrative and academic users — hardware, software, and peripherals both in-person and remotely</li>
+        <li>Partnered with Help Desk and IT staff to diagnose and resolve client problems using a collaborative approach</li>
+        <li>Deployed new desktops and laptops with focus on data integrity, security compliance, and proper asset management</li>
+        <li>Meticulously documented all technical support procedures and maintained accurate customer records</li>
+      </ul>
+      <div class="timeline-tags">
+        <span class="tag">Hardware Troubleshooting</span>
+        <span class="tag">Asset Management</span>
+        <span class="tag">Active Directory</span>
+        <span class="tag cyan">Documentation</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- PROJECTS -->
+<section id="projects">
+  <p class="section-label">WORK</p>
+  <h2 class="section-title">Projects & Labs</h2>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-red"></div>
+      <div class="dot dot-yellow"></div>
+      <div class="dot dot-green"></div>
+      <span class="terminal-title">bash — lab-environment</span>
+    </div>
+    <div class="terminal-body">
+      <div class="t-line"><span class="t-prompt">❯</span><span class="t-dir">~/labs</span><span class="t-cmd">&nbsp;ls -la</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  cml-multiarea-ospf/</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  cml-eigrp-ospf-bgp-redistribution/</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  cml-bgp-deep-dive/</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  cml-aaa-lab/</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  cml-dhcp-snooping-arp-inspection/</span></div>
+      <div class="t-line"><span class="t-out">drwxr-xr-x  network-automation/</span></div>
+      <div class="t-line"><span class="t-prompt">❯</span><span class="t-dir">~/labs</span><span class="t-cmd">&nbsp;cat current_goal.txt</span></div>
+      <div class="t-line"><span class="t-out t-comment"># CCNP ENCOR → ENARSI. One exam at a time.</span></div>
+      <div class="t-line"><span class="t-out t-comment"># Lab it until it makes sense.</span></div>
+    </div>
+  </div>
+
+  <div class="projects-grid">
+
+    <a class="project-card" href="https://github.com/amedinaus/Networking" target="_blank">
+      <div class="project-header">
+        <div class="project-icon">&lt;/&gt;</div>
+        <span class="project-arrow">↗</span>
+      </div>
+      <div class="project-name">Network Automation Scripts</div>
+      <p class="project-desc">Python/Netmiko scripts for enterprise switch compliance checks, TACACS server updates, and Catalyst Center API queries. Deployed in production across 1,000+ switches.</p>
+      <div class="project-status status-live">● production / github</div>
+    </a>
+
+    <div class="project-card">
+      <div class="project-header">
+        <div class="project-icon">&#9670;</div>
+        <span class="project-arrow"></span>
+      </div>
+      <div class="project-name">ENCOR CML Topology</div>
+      <p class="project-desc">Multi-domain CML lab covering all ENCOR domains: OSPF multi-area, EIGRP (named mode), BGP (iBGP/eBGP, route reflectors, confederations), SDA, NETCONF/RESTCONF, and EEM automation.</p>
+      <div class="project-status status-active">● active / CML</div>
+    </div>
+
+    <div class="project-card">
+      <div class="project-header">
+        <div class="project-icon">&#9632;</div>
+        <span class="project-arrow"></span>
+      </div>
+      <div class="project-name">EVE-NG Labs</div>
+      <p class="project-desc">Supplemental ENCOR lab environment in EVE-NG covering SD-WAN, SDA fabric design, QoS, and multicast — topics requiring additional vendor images beyond CML's default library.</p>
+      <div class="project-status status-active">● active / EVE-NG</div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- SKILLS -->
+<section id="skills">
+  <p class="section-label">TECHNICAL</p>
+  <h2 class="section-title">Skills & Tools</h2>
+
+  <div class="skills-grid">
+
+    <div class="skill-group">
+      <div class="skill-group-title">Routing & Switching</div>
+      <ul class="skill-list">
+        <li>OSPF (multi-area, redistribution)</li>
+        <li>BGP (iBGP/eBGP, RR, confederations)</li>
+        <li>EIGRP (named mode, UCMP)</li>
+        <li>VLAN, VRF, STP</li>
+        <li>Catalyst 9000 series</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <div class="skill-group-title">Wireless</div>
+      <ul class="skill-list">
+        <li>Cisco 9800 WLC</li>
+        <li>FlexConnect / Local Mode</li>
+        <li>AP series 9120/9130/9164/9166</li>
+        <li>Site surveys (NetScout AirCheck G2)</li>
+        <li>7Signal / RF optimization</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <div class="skill-group-title">Security</div>
+      <ul class="skill-list">
+        <li>Cisco ISE (802.1X, MAB, TACACS+)</li>
+        <li>Firepower FTD / FMC</li>
+        <li>CoPP / SISF / TrustSec</li>
+        <li>Cisco ACI / APIC</li>
+        <li>Dynamic access policies</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <div class="skill-group-title">Automation & Dev</div>
+      <ul class="skill-list">
+        <li>Python / Netmiko</li>
+        <li>Jinja2 templates</li>
+        <li>NETCONF / RESTCONF</li>
+        <li>Cisco Catalyst Center API</li>
+        <li>EEM / Guestshell</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <div class="skill-group-title">Management</div>
+      <ul class="skill-list">
+        <li>Cisco Catalyst Center (CCC)</li>
+        <li>SolarWinds</li>
+        <li>Cisco Prime</li>
+        <li>Active Directory</li>
+        <li>SCCM / JAMF</li>
+      </ul>
+    </div>
+
+    <div class="skill-group">
+      <div class="skill-group-title">Labs & Study</div>
+      <ul class="skill-list">
+        <li>Cisco Modeling Labs (CML)</li>
+        <li>EVE-NG</li>
+        <li>INE Premium / Skill Dive</li>
+        <li>Boson NetSim</li>
+        <li>GNS3</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <!-- Cert Progress -->
+  <div class="cert-progress">
+    <div style="font-size:11px;letter-spacing:0.12em;color:var(--green);margin-bottom:1rem;">// CERTIFICATIONS — click to verify</div>
+
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/4769b483-5f8d-4adc-8eec-58275b3cd70a" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">CompTIA A+ ce</span>
+      <span class="cert-date">NOV 2020 · exp Oct 2026</span>
+    </a>
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/6ff56941-e988-4fca-a030-949058f1249f" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">CompTIA Network+ ce</span>
+      <span class="cert-date">NOV 2022 · exp Oct 2026</span>
+    </a>
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/89824662-8069-43a4-8e94-96a917dc7d20" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">CompTIA Security+ ce</span>
+      <span class="cert-date">OCT 2023 · exp Oct 2026</span>
+    </a>
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/338ab062-820a-401c-8b35-72cb1800b393" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">CompTIA IT Operations Specialist (CIOS) — Stackable</span>
+      <span class="cert-date">NOV 2022 · exp Oct 2026</span>
+    </a>
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/4eb2b9ac-f4dc-43ba-99c4-3d170ed8765b" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">CompTIA Secure Infrastructure Specialist (CSIS) — Stackable</span>
+      <span class="cert-date">OCT 2023 · exp Oct 2026</span>
+    </a>
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/bf38d2cb-577e-4703-9f5c-6984c234b9e4" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">Cisco CCNA</span>
+      <span class="cert-date">JUN 2023 · exp Jun 2026</span>
+    </a>
+    <a class="cert-item" href="https://www.credly.com/earner/earned/badge/8035ac55-5dad-429f-a649-06bf81473830" target="_blank" style="text-decoration:none;">
+      <div class="cert-check done">✓</div>
+      <span class="cert-name">AWS Certified Cloud Practitioner</span>
+      <span class="cert-date">AUG 2025 · exp Aug 2028</span>
+    </a>
+    <div class="cert-item">
+      <div class="cert-check progress">⚡</div>
+      <span class="cert-name">Cisco CCNP ENCOR 350-401 — <span style="color:var(--amber);">scheduled Apr 18, 2026</span></span>
+      <span class="cert-date">SCHEDULED</span>
+    </div>
+    <div class="cert-item">
+      <div class="cert-check progress">⚡</div>
+      <span class="cert-name">Cisco CCNP ENARSI 300-410 — <span style="color:var(--amber);">target Jun 2026</span></span>
+      <span class="cert-date">IN PROGRESS</span>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- EDUCATION -->
+<section>
+  <p class="section-label">EDUCATION</p>
+  <h2 class="section-title">Academic Background</h2>
+  <div class="edu-grid">
+    <div class="edu-card">
+      <div class="edu-degree">M.S. Cybersecurity</div>
+      <div class="edu-school">Pace University — Seidenberg School</div>
+      <div class="edu-year">December 2023</div>
+    </div>
+    <div class="edu-card">
+      <div class="edu-degree">B.S. Information Technology</div>
+      <div class="edu-school">Pace University — Seidenberg School</div>
+      <div class="edu-year">May 2022</div>
+    </div>
+    <div class="edu-card">
+      <div class="edu-degree">A.S. Cybersecurity</div>
+      <div class="edu-school">SUNY Westchester Community College</div>
+      <div class="edu-year">2020</div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <p class="section-label">GET IN TOUCH</p>
+  <h2 class="section-title">Contact</h2>
+
+  <div class="contact-block">
+    <div>
+      <p style="font-size:13px;color:var(--text-secondary);max-width:400px;line-height:1.8;">
+        I'm always open to conversations about network engineering, enterprise security,
+        or career opportunities. Drop a message or connect on LinkedIn.
+      </p>
+    </div>
+    <div class="contact-links">
+      <a class="contact-link" href="https://www.linkedin.com/in/angel-medina-us/" target="_blank">
+        <span class="contact-link-label">LinkedIn</span>
+        linkedin.com/in/angel-medina-us
+      </a>
+      <a class="contact-link" href="https://github.com/amedinaus" target="_blank">
+        <span class="contact-link-label">GitHub</span>
+        github.com/amedinaus
+      </a>
+      <a class="contact-link" href="mailto:angel.medina.us@gmail.com">
+        <span class="contact-link-label">Email</span>
+        angel.medina.us@gmail.com
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>amedina.net</span> — network engineer · security practitioner · new york
+</footer>
+
+<script>
+  // ── CLI HERO TYPING ENGINE ──
+  const body = document.getElementById('cli-body');
+  const cursor = document.getElementById('cli-cursor');
+
+  const sequence = [
+    { type: 'prompt', mode: 'user', text: 'enable' },
+    { type: 'password', text: '••••••••' },
+    { type: 'prompt', mode: 'priv', text: 'show run' },
+    { type: 'output', text: 'Building configuration...' },
+    { type: 'output', text: '' },
+    { type: 'output', text: 'Current configuration : 59332 bytes' },
+    { type: 'output', text: '!' },
+    { type: 'output', text: '! Last configuration change at ' + (() => {
+        const now = new Date();
+        const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        const ss = String(now.getSeconds()).padStart(2,'0');
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone.includes('New_York') ? 'EST' : 'UTC';
+        return `${hh}:${mm}:${ss} EST ${days[now.getDay()]} ${months[now.getMonth()]} ${now.getDate()} ${now.getFullYear()}`;
+      })() },
+    { type: 'output', text: '!' },
+    { type: 'comment', text: '  Network Engineer with 4+ years designing, managing,' },
+    { type: 'comment', text: '  and securing enterprise infrastructure at scale — 1,800+ APs,' },
+    { type: 'comment', text: '  1,000+ switches, and multi-campus operations across New York.' },
+    { type: 'comment', text: '  Cisco-focused, automation-driven, and security-minded.' },
+    { type: 'comment', text: '  Currently pursuing CCNP to push further into advanced routing' },
+    { type: 'comment', text: '  and enterprise architecture.' },
+    { type: 'output', text: '!' },
+    { type: 'output', text: 'end' },
+    { type: 'done' },
+  ];
+
+  const promptLabels = {
+    user: '<span class="cli-prompt-user">Summary&gt;</span> ',
+    priv: '<span class="cli-prompt-priv">Summary#</span> ',
+  };
+
+  let step = 0;
+
+  function addLine(html) {
+    cursor.remove();
+    const span = document.createElement('div');
+    span.innerHTML = html;
+    body.appendChild(span);
+    body.appendChild(cursor);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function typeInto(target, text, speed, cb) {
+    let i = 0;
+    function tick() {
+      if (i < text.length) {
+        target.innerHTML += text[i++];
+        setTimeout(tick, speed + Math.random() * (speed * 0.5));
+      } else {
+        cb && setTimeout(cb, 300);
+      }
+    }
+    tick();
+  }
+
+  function runStep() {
+    if (step >= sequence.length) return;
+    const s = sequence[step++];
+
+    if (s.type === 'done') {
+      cursor.remove();
+      const finalLine = document.createElement('div');
+      finalLine.innerHTML = '<span class="cli-prompt-priv">Summary#</span> <span class="cli-cursor"></span>';
+      const c = finalLine.querySelector('.cli-cursor');
+      c.style.cssText = 'display:inline-block;width:7px;height:13px;background:var(--green);animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px;';
+      body.appendChild(finalLine);
+      return;
+    }
+
+    if (s.type === 'output' || s.type === 'comment') {
+      const cls = s.type === 'comment' ? 'cli-comment' : 'cli-output';
+      addLine(`<span class="${cls}">${s.text}</span>`);
+      setTimeout(runStep, 80);
+      return;
+    }
+
+    if (s.type === 'kv') {
+      addLine(`<span class="cli-output"> <span class="cli-key">${s.key}</span> <span class="cli-comment">=</span> <span class="cli-val">${s.val}</span></span>`);
+      setTimeout(runStep, 60);
+      return;
+    }
+
+    if (s.type === 'password') {
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="cli-output">Password: <span class="cli-comment"></span></span>`;
+      cursor.remove();
+      body.appendChild(line);
+      body.appendChild(cursor);
+      const pw = line.querySelector('.cli-comment');
+      typeInto(pw, s.text, 120, () => {
+        setTimeout(runStep, 400);
+      });
+      return;
+    }
+
+    if (s.type === 'prompt') {
+      const line = document.createElement('div');
+      line.innerHTML = `${promptLabels[s.mode]}<span class="cli-val"></span>`;
+      cursor.remove();
+      body.appendChild(line);
+      body.appendChild(cursor);
+      const typed = line.querySelector('.cli-val');
+      typeInto(typed, s.text, 60, () => {
+        setTimeout(runStep, 350);
+      });
+      return;
+    }
+  }
+
+  setTimeout(runStep, 600);
+
+  // ── UPTIME COUNTER ──
+  const startDate = new Date('2021-10-01');
+  function updateUptime() {
+    const now = new Date();
+    let years = now.getFullYear() - startDate.getFullYear();
+    let months = now.getMonth() - startDate.getMonth();
+    let days = now.getDate() - startDate.getDate();
+    if (days < 0) { months--; days += 30; }
+    if (months < 0) { years--; months += 12; }
+    const el = document.getElementById('uptime-counter');
+    if (el) el.textContent = `${years}y ${months}m ${days}d`;
+  }
+  updateUptime();
+  setInterval(updateUptime, 60000);
+
+  // ── EXAM COUNTDOWN ──
+  const examDate = new Date('2026-04-18');
+  function updateCountdown() {
+    const now = new Date();
+    const diff = examDate - now;
+    if (diff <= 0) {
+      document.getElementById('exam-countdown').textContent = 'PASSED';
+      return;
+    }
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const el = document.getElementById('exam-countdown');
+    if (el) el.textContent = `${days}d remaining`;
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 60000);
+
+
+  const revealEls = document.querySelectorAll('section, .timeline-item, .project-card, .skill-group, .edu-card, .cert-item, .terminal');
+  revealEls.forEach((el, i) => {
+    el.classList.add('reveal');
+    el.style.transitionDelay = (i % 5) * 0.06 + 's';
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
+
+  revealEls.forEach(el => observer.observe(el));
+
+  // ── NAV ACTIVE SECTION ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(s => {
+      if (window.scrollY >= s.offsetTop - 80) current = s.id;
+    });
+    navLinks.forEach(a => {
+      a.style.color = a.getAttribute('href') === '#' + current ? 'var(--green)' : '';
+    });
+  }, { passive: true });
+</script>
+</body>
+</html>
