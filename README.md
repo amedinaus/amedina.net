@@ -1,24 +1,8 @@
 # amedina.net
 
-Personal portfolio site for Angel Medina — Senior Network Engineer & CCNP Candidate.
+Personal portfolio site.
 
 Live at [amedina.net](https://amedina.net)
-
-## Stack
-
-- Pure HTML/CSS/JS — no frameworks, no dependencies
-- Hosted on GitHub Pages
-- Custom domain via Hostinger DNS
-
-## Features
-
-- Cisco IOS CLI hero animation
-- Animated lab terminal (scroll-triggered)
-- Live ENCOR exam countdown
-- Live uptime counter
-- Credly-verified cert badges
-- Formspree contact form
-- SEO + Open Graph tags
 
 ## Files
 
