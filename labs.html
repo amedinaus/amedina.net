@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angel Medina | Lab Topologies</title>
+<meta name="description" content="CML-based lab topologies built for ENCOR/ENARSI study and production scenario practice.">
+<link rel="canonical" href="https://amedina.net/labs.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080c10'/><text x='4' y='22' font-family='monospace' font-weight='bold' font-size='14' fill='%2339d353'>AM</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10; --bg-card: #0d1117; --bg-elevated: #161b22;
+    --border: #21262d; --border-bright: #30363d;
+    --green: #39d353; --green-dim: #196127;
+    --green-subtle: rgba(57,211,83,0.06);
+    --cyan: #58d9f5; --amber: #e6a817;
+    --text-primary: #e6edf3; --text-secondary: #8b949e; --text-muted: #484f58;
+    --mono: 'JetBrains Mono', monospace; --display: 'Syne', sans-serif;
+    --radius: 6px; --radius-lg: 10px;
+  }
+  body.light {
+    --bg: #f6f8fa; --bg-card: #ffffff; --bg-elevated: #eaeef2;
+    --border: #d0d7de; --border-bright: #b0bac5;
+    --green: #1a7f37; --green-dim: #aceebb; --green-subtle: rgba(26,127,55,0.08);
+    --cyan: #0969da; --amber: #9a6700;
+    --text-primary: #1f2328; --text-secondary: #656d76; --text-muted: #9198a1;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;overflow-x:hidden;}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--mono);font-size:14px;line-height:1.7;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(57,211,83,0.4);}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(57,211,83,0);}}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,12,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;}
+  body.light nav{background:rgba(246,248,250,0.92);}
+  .nav-logo{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green);letter-spacing:0.05em;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .nav-logo span{color:var(--text-secondary);font-weight:300;}
+  nav ul{list-style:none;display:flex;gap:2rem;}
+  nav a{font-family:var(--mono);font-size:12px;color:var(--text-secondary);text-decoration:none;letter-spacing:0.08em;transition:color 0.2s;position:relative;}
+  nav a:hover,nav a.active{color:var(--green);}
+  nav a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1px;background:var(--green);transition:width 0.3s ease;}
+  nav a:hover::after,nav a.active::after{width:100%;}
+  .theme-toggle{background:none;border:1px solid var(--border-bright);border-radius:var(--radius);color:var(--text-secondary);font-family:var(--mono);font-size:11px;padding:4px 10px;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em;}
+  .theme-toggle:hover{border-color:var(--green);color:var(--green);}
+  .scroll-progress{position:fixed;top:0;left:0;height:2px;width:0%;background:var(--green);z-index:999;transition:width 0.1s linear;box-shadow:0 0 8px rgba(57,211,83,0.5);}
+  main{padding-top:56px;max-width:960px;margin:0 auto;padding:80px 2rem;}
+  .page-header{margin-bottom:3rem;}
+  .section-label{font-size:11px;font-weight:500;letter-spacing:0.15em;color:var(--green);margin-bottom:0.5rem;display:flex;align-items:center;gap:8px;}
+  .section-label::before{content:'//';color:var(--text-muted);}
+  .page-title{font-family:var(--display);font-size:clamp(28px,5vw,48px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;color:var(--text-primary);margin-bottom:0.75rem;}
+  .page-subtitle{font-size:13px;color:var(--text-secondary);max-width:560px;line-height:1.8;}
+  .labs-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;}
+  .lab-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;transition:border-color 0.2s,transform 0.2s,box-shadow 0.2s;}
+  .lab-card:hover{border-color:var(--border-bright);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+  .lab-img{width:100%;height:160px;background:var(--bg-elevated);display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted);letter-spacing:0.05em;position:relative;overflow:hidden;}
+  .lab-img img{width:100%;height:100%;object-fit:cover;}
+  .lab-img-placeholder{display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .lab-img-placeholder svg{width:32px;height:32px;stroke:var(--text-muted);fill:none;}
+  .lab-body{padding:1.25rem;}
+  .lab-status{font-size:9px;letter-spacing:0.1em;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .lab-status-dot{width:5px;height:5px;border-radius:50%;}
+  .dot-done{background:var(--green);} .dot-wip{background:var(--amber);} .dot-planned{background:var(--text-muted);}
+  .lab-name{font-family:var(--display);font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:6px;}
+  .lab-desc{font-size:12px;color:var(--text-secondary);line-height:1.7;margin-bottom:12px;}
+  .lab-tags{display:flex;flex-wrap:wrap;gap:6px;}
+  .lab-tag{font-size:10px;letter-spacing:0.05em;padding:2px 7px;border-radius:3px;background:var(--green-subtle);color:var(--green);border:1px solid var(--green-dim);}
+  .divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);margin:3rem 0;}
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:11px;color:var(--text-muted);letter-spacing:0.05em;margin-top:3rem;}
+  footer span{color:var(--green);}
+  .reveal{opacity:0;transform:translateY(20px);transition:opacity 0.6s cubic-bezier(0.16,1,0.3,1),transform 0.6s cubic-bezier(0.16,1,0.3,1);}
+  .reveal.visible{opacity:1;transform:translateY(0);}
+  @media(max-width:640px){nav ul{display:none;}main{padding:70px 1.25rem 2rem;}}
+</style>
+</head>
+<body>
+<div class="scroll-progress" id="scroll-progress"></div>
+<nav>
+  <a href="index.html" class="nav-logo">AM<span>.net</span></a>
+  <ul>
+    <li><a href="index.html#experience">experience</a></li>
+    <li><a href="index.html#projects">projects</a></li>
+    <li><a href="index.html#skills">skills</a></li>
+    <li><a href="index.html#blog">blog</a></li>
+    <li><a href="labs.html" class="active">labs</a></li>
+  </ul>
+  <button class="theme-toggle" id="theme-toggle">◐ light</button>
+</nav>
+
+<main>
+  <div class="page-header">
+    <p class="section-label">HOME LAB</p>
+    <h1 class="page-title">Lab Topologies</h1>
+    <p class="page-subtitle">CML-based labs built for ENCOR/ENARSI study and production scenario practice. All topologies run on Cisco Modeling Labs with IOSv/IOSvL2 images.</p>
+  </div>
+
+  <div class="labs-grid">
+
+    <div class="lab-card reveal">
+      <div class="lab-img">
+        <div class="lab-img-placeholder">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>screenshot coming soon</span>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="lab-status"><span class="lab-status-dot dot-wip"></span><span style="color:var(--amber);">IN PROGRESS</span></div>
+        <div class="lab-name">Enterprise Routing Lab</div>
+        <p class="lab-desc">21-router topology covering all OSPF area types (Stub, Totally Stub, NSSA, Totally NSSA, Normal), EIGRP named mode with UCMP and mixed authentication (MD5/HMAC-SHA-256 with key rotation), mutual OSPF/EIGRP redistribution at two points with route tagging for loop prevention, and policy-based routing.</p>
+        <div class="lab-tags">
+          <span class="lab-tag">OSPF multi-area</span>
+          <span class="lab-tag">EIGRP named</span>
+          <span class="lab-tag">Redistribution</span>
+          <span class="lab-tag">Route tagging</span>
+          <span class="lab-tag">PBR</span>
+          <span class="lab-tag">Auth MD5/HMAC</span>
+          <span class="lab-tag">UCMP</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lab-card reveal">
+      <div class="lab-img">
+        <div class="lab-img-placeholder">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>screenshot coming soon</span>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="lab-status"><span class="lab-status-dot dot-planned"></span><span style="color:var(--text-muted);">PLANNED</span></div>
+        <div class="lab-name">BGP Deep Dive</div>
+        <p class="lab-desc">eBGP and iBGP topology covering path selection attributes (weight, local-pref, MED, AS-path), route reflectors, confederations, communities, AS-path prepending, and prefix aggregation with suppress-map.</p>
+        <div class="lab-tags">
+          <span class="lab-tag">eBGP / iBGP</span>
+          <span class="lab-tag">Route Reflectors</span>
+          <span class="lab-tag">Confederations</span>
+          <span class="lab-tag">Communities</span>
+          <span class="lab-tag">Path Selection</span>
+          <span class="lab-tag">Aggregation</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lab-card reveal">
+      <div class="lab-img">
+        <div class="lab-img-placeholder">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>screenshot coming soon</span>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="lab-status"><span class="lab-status-dot dot-planned"></span><span style="color:var(--text-muted);">PLANNED</span></div>
+        <div class="lab-name">Dual-ISP Failover (IP SLA)</div>
+        <p class="lab-desc">Based on a production implementation — dual ISP links serving two buildings, OSPF redistribution with route maps and prefix lists to prefer one provider, and IP SLA object tracking for automatic failover when the primary ISP goes down.</p>
+        <div class="lab-tags">
+          <span class="lab-tag">IP SLA</span>
+          <span class="lab-tag">Object Tracking</span>
+          <span class="lab-tag">OSPF Redistribution</span>
+          <span class="lab-tag">Route Maps</span>
+          <span class="lab-tag">Dual ISP</span>
+          <span class="lab-tag">Failover</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lab-card reveal">
+      <div class="lab-img">
+        <div class="lab-img-placeholder">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>screenshot coming soon</span>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="lab-status"><span class="lab-status-dot dot-wip"></span><span style="color:var(--amber);">IN PROGRESS</span></div>
+        <div class="lab-name">DHCP Snooping & DAI</div>
+        <p class="lab-desc">Layer 2 security lab covering DHCP snooping with trusted/untrusted port enforcement, dynamic ARP inspection with ARP ACLs, and IP source guard to prevent rogue DHCP servers and ARP spoofing attacks.</p>
+        <div class="lab-tags">
+          <span class="lab-tag">DHCP Snooping</span>
+          <span class="lab-tag">DAI</span>
+          <span class="lab-tag">IP Source Guard</span>
+          <span class="lab-tag">ARP ACL</span>
+          <span class="lab-tag">L2 Security</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lab-card reveal">
+      <div class="lab-img">
+        <div class="lab-img-placeholder">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>screenshot coming soon</span>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="lab-status"><span class="lab-status-dot dot-wip"></span><span style="color:var(--amber);">IN PROGRESS</span></div>
+        <div class="lab-name">GRE & Multicast over GRE</div>
+        <p class="lab-desc">GRE tunnel configuration between sites with multicast traffic forwarded over the tunnel — covers PIM sparse mode, RP configuration, and multicast routing across a GRE overlay network.</p>
+        <div class="lab-tags">
+          <span class="lab-tag">GRE Tunneling</span>
+          <span class="lab-tag">PIM Sparse Mode</span>
+          <span class="lab-tag">RP Config</span>
+          <span class="lab-tag">Multicast</span>
+          <span class="lab-tag">Overlay</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="lab-card reveal">
+      <div class="lab-img">
+        <div class="lab-img-placeholder">
+          <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <span>screenshot coming soon</span>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="lab-status"><span class="lab-status-dot dot-planned"></span><span style="color:var(--text-muted);">PLANNED</span></div>
+        <div class="lab-name">AAA Lab</div>
+        <p class="lab-desc">TACACS+ authentication and authorization with local fallback, privilege level configuration, command authorization per group, and accounting — modeled after production Cisco ISE/TACACS+ deployment.</p>
+        <div class="lab-tags">
+          <span class="lab-tag">TACACS+</span>
+          <span class="lab-tag">AAA</span>
+          <span class="lab-tag">Local Fallback</span>
+          <span class="lab-tag">Privilege Levels</span>
+          <span class="lab-tag">Command Auth</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
+
+<script>
+  const progressBar = document.getElementById('scroll-progress');
+  window.addEventListener('scroll', () => {
+    const pct = document.documentElement.scrollHeight - window.innerHeight > 0
+      ? (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100 : 0;
+    progressBar.style.width = pct + '%';
+  }, { passive: true });
+
+  const themeBtn = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') { document.body.classList.add('light'); themeBtn.textContent = '◑ dark'; }
+  themeBtn.addEventListener('click', () => {
+    document.body.classList.toggle('light');
+    const isLight = document.body.classList.contains('light');
+    themeBtn.textContent = isLight ? '◑ dark' : '◐ light';
+    localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  });
+
+  const revealEls = document.querySelectorAll('.reveal');
+  revealEls.forEach((el, i) => { el.style.transitionDelay = (i % 3) * 0.08 + 's'; });
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => { if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); } });
+  }, { threshold: 0.06 });
+  revealEls.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
