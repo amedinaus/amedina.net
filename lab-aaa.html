@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Angel Medina | AAA Lab</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080c10'/><text x='4' y='22' font-family='monospace' font-weight='bold' font-size='14' fill='%2339d353'>AM</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#080c10;--bg-card:#0d1117;--bg-elevated:#161b22;
+    --border:#21262d;--border-bright:#30363d;
+    --green:#39d353;--green-dim:#196127;--green-subtle:rgba(57,211,83,0.06);
+    --cyan:#58d9f5;--amber:#e6a817;
+    --text-primary:#e6edf3;--text-secondary:#8b949e;--text-muted:#484f58;
+    --mono:'JetBrains Mono',monospace;--display:'Syne',sans-serif;
+    --radius:6px;--radius-lg:10px;
+  }
+  body.light {
+    --bg:#f8f9fa;--bg-card:#ffffff;--bg-elevated:#f0f2f4;
+    --border:#d8dde3;--border-bright:#b8c0c8;
+    --green:#1a7f37;--green-dim:#aceebb;--green-subtle:rgba(26,127,55,0.08);
+    --cyan:#0969da;--amber:#9a6700;
+    --text-primary:#1f2328;--text-secondary:#424a53;--text-muted:#6e7781;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;overflow-x:hidden;}
+  body{background:var(--bg);color:var(--text-primary);font-family:var(--mono);font-size:14px;line-height:1.7;}
+  body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(57,211,83,0.4);}50%{opacity:0.8;box-shadow:0 0 0 4px rgba(57,211,83,0);}}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,12,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;}
+  body.light nav{background:rgba(248,249,250,0.92);}
+  .nav-logo{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--green);letter-spacing:0.05em;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+  .nav-logo span{color:var(--text-secondary);font-weight:300;}
+  nav ul{list-style:none;display:flex;gap:2rem;}
+  nav a{font-family:var(--mono);font-size:12px;color:var(--text-secondary);text-decoration:none;letter-spacing:0.08em;transition:color 0.2s;position:relative;}
+  nav a:hover,nav a.active{color:var(--green);}
+  nav a::after{content:'';position:absolute;bottom:-2px;left:0;width:0;height:1px;background:var(--green);transition:width 0.3s ease;}
+  nav a:hover::after,nav a.active::after{width:100%;}
+  .theme-toggle{background:none;border:1px solid var(--border-bright);border-radius:var(--radius);color:var(--text-secondary);font-family:var(--mono);font-size:11px;padding:4px 10px;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em;}
+  .theme-toggle:hover{border-color:var(--green);color:var(--green);}
+  .scroll-progress{position:fixed;top:0;left:0;height:2px;width:0%;background:var(--green);z-index:999;transition:width 0.1s linear;box-shadow:0 0 8px rgba(57,211,83,0.5);}
+  main{padding-top:56px;max-width:960px;margin:0 auto;padding:80px 2rem;}
+  .back-link{font-size:11px;color:var(--text-muted);text-decoration:none;letter-spacing:0.05em;display:inline-flex;align-items:center;gap:6px;margin-bottom:2rem;transition:color 0.2s;}
+  .back-link:hover{color:var(--green);}
+  .lab-header{margin-bottom:2.5rem;}
+  .lab-status{font-size:10px;letter-spacing:0.1em;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px;}
+  .status-dot{width:6px;height:6px;border-radius:50%;}
+  .dot-wip{background:var(--amber);} .dot-planned{background:var(--text-muted);} .dot-done{background:var(--green);}
+  .lab-title{font-family:var(--display);font-size:clamp(24px,5vw,42px);font-weight:800;line-height:1.1;letter-spacing:-0.02em;color:var(--text-primary);margin-bottom:0.75rem;}
+  .lab-subtitle{font-size:13px;color:var(--text-secondary);max-width:600px;line-height:1.8;}
+  .lab-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:1rem;}
+  .lab-tag{font-size:10px;letter-spacing:0.05em;padding:3px 8px;border-radius:3px;background:var(--green-subtle);color:var(--green);border:1px solid var(--green-dim);}
+  .screenshot-box{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:2.5rem;}
+  .screenshot-box img{width:100%;display:block;}
+  .screenshot-placeholder{height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-muted);font-size:12px;letter-spacing:0.05em;background:var(--bg-elevated);}
+  .screenshot-placeholder svg{width:40px;height:40px;stroke:var(--text-muted);fill:none;}
+  .section-block{margin-bottom:2.5rem;}
+  .block-label{font-size:11px;font-weight:500;letter-spacing:0.12em;color:var(--green);margin-bottom:1rem;display:flex;align-items:center;gap:8px;}
+  .block-label::before{content:'//';color:var(--text-muted);}
+  .block-title{font-family:var(--display);font-size:18px;font-weight:700;color:var(--text-primary);margin-bottom:1rem;}
+  .topic-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;}
+  .topic-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;}
+  .topic-card-title{font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:8px;letter-spacing:0.03em;}
+  .topic-list{list-style:none;display:flex;flex-direction:column;gap:4px;}
+  .topic-list li{font-size:11px;color:var(--text-secondary);padding-left:12px;position:relative;}
+  .topic-list li::before{content:'›';position:absolute;left:0;color:var(--green);}
+  .notes-block{background:var(--bg-card);border:1px solid var(--border);border-left:3px solid var(--green);border-radius:var(--radius-lg);padding:1.25rem;font-size:12px;color:var(--text-secondary);line-height:1.8;}
+  .divider{height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);margin:2.5rem 0;}
+  footer{border-top:1px solid var(--border);padding:2rem;text-align:center;font-size:11px;color:var(--text-muted);letter-spacing:0.05em;margin-top:3rem;}
+  footer span{color:var(--green);}
+  @media(max-width:640px){nav ul{display:none;}main{padding:70px 1.25rem 2rem;}}
+</style>
+</head>
+<body>
+<div class="scroll-progress" id="scroll-progress"></div>
+<nav>
+  <a href="index.html" class="nav-logo">AM<span>.net</span></a>
+  <ul>
+    <li><a href="index.html#experience">experience</a></li>
+    <li><a href="index.html#projects">projects</a></li>
+    <li><a href="index.html#skills">skills</a></li>
+    <li><a href="index.html#blog">blog</a></li>
+    <li><a href="labs.html" class="active">labs</a></li>
+  </ul>
+  <button class="theme-toggle" id="theme-toggle">◐ light</button>
+</nav>
+<main>
+  <a href="labs.html" class="back-link">← back to labs</a>
+  <div class="lab-header">
+    <div class="lab-status"><span class="status-dot dot-planned"></span><span style="color:var(--text-muted);">PLANNED</span></div>
+    <h1 class="lab-title">AAA Lab</h1>
+    <p class="lab-subtitle">TACACS+ authentication and authorization with local fallback, privilege levels, and command authorization — modeled after production ISE/TACACS+ deployment.</p>
+    <div class="lab-tags"><span class="lab-tag">TACACS+</span> <span class="lab-tag">AAA</span> <span class="lab-tag">Local fallback</span> <span class="lab-tag">Privilege levels</span> <span class="lab-tag">Command auth</span> <span class="lab-tag">Accounting</span> <span class="lab-tag">ISE</span></div>
+  </div>
+  <div class="screenshot-box">
+    <div class="screenshot-placeholder">
+      <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span>topology screenshot coming soon</span>
+      <span style="font-size:10px;">replace with: lab-aaa.png</span>
+    </div>
+  </div>
+  <div class="section-block">
+    <div class="block-label">COVERAGE</div>
+    <div class="topic-grid"><div class="topic-card"><div class="topic-card-title">Authentication</div><ul class="topic-list"><li>aaa new-model</li><li>TACACS+ as primary method</li><li>Local as fallback</li><li>Login and enable authentication</li><li>SSH-only access (no telnet)</li></ul></div><div class="topic-card"><div class="topic-card-title">Authorization</div><ul class="topic-list"><li>Command authorization per privilege level</li><li>Exec authorization</li><li>Network authorization</li><li>ISE policy group mapping</li><li>Fallback to local if TACACS down</li></ul></div><div class="topic-card"><div class="topic-card-title">Privilege Levels</div><ul class="topic-list"><li>Level 1 — read-only show commands</li><li>Level 5 — interface and basic config</li><li>Level 15 — full access</li><li>Custom command sets per level</li><li>privilege exec level assignment</li></ul></div><div class="topic-card"><div class="topic-card-title">Accounting</div><ul class="topic-list"><li>Exec session accounting</li><li>Command accounting</li><li>Start-stop vs stop-only</li><li>Accounting to TACACS+ server</li><li>Verify with show accounting</li></ul></div></div>
+  </div>
+  <div class="divider"></div>
+  <div class="section-block">
+    <div class="block-label">NOTES</div>
+    <div class="notes-block">Modeled after the production TACACS+ setup used at Pace University with Cisco ISE as the TACACS+ server. The lab simulates the same tiered access model — helpdesk gets read-only, network team gets operational access, senior engineers get full privilege 15. Local fallback ensures access is maintained if ISE is unreachable.</div>
+  </div>
+</main>
+<footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
+<script>
+  const progressBar = document.getElementById('scroll-progress');
+  window.addEventListener('scroll', () => { const pct = document.documentElement.scrollHeight - window.innerHeight > 0 ? (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100 : 0; progressBar.style.width = pct + '%'; }, { passive: true });
+  const themeBtn = document.getElementById('theme-toggle');
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') { document.body.classList.add('light'); themeBtn.textContent = '◑ dark'; }
+  themeBtn.addEventListener('click', () => { document.body.classList.toggle('light'); const isLight = document.body.classList.contains('light'); themeBtn.textContent = isLight ? '◑ dark' : '◐ light'; localStorage.setItem('theme', isLight ? 'light' : 'dark'); });
+</script>
+</body>
+</html>
