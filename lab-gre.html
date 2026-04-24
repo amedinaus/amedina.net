@@ -91,26 +91,27 @@
 <main>
   <a href="labs.html" class="back-link">← back to labs</a>
   <div class="lab-header">
-    <div class="lab-status"><span class="status-dot dot-wip"></span><span style="color:var(--amber);">IN PROGRESS</span></div>
+    <div class="lab-status"><span class="status-dot dot-done"></span><span style="color:var(--green);">COMPLETE</span></div>
     <h1 class="lab-title">GRE & Multicast over GRE</h1>
-    <p class="lab-subtitle">GRE tunnel configuration between two sites with multicast traffic forwarded over the tunnel using PIM sparse mode and a static RP.</p>
-    <div class="lab-tags"><span class="lab-tag">GRE Tunneling</span> <span class="lab-tag">PIM Sparse Mode</span> <span class="lab-tag">RP Configuration</span> <span class="lab-tag">Multicast</span> <span class="lab-tag">Tunnel interfaces</span> <span class="lab-tag">mroute</span></div>
+    <p class="lab-subtitle">Two-site topology with a GRE tunnel between R1 and R2 over a simulated ISP. Runs OSPF area 0 internally, eBGP to the ISP, iBGP between R1 and R2 via loopbacks, and PIM sparse mode with a static RP for multicast forwarding over the tunnel.</p>
+    <div class="lab-tags"><span class="lab-tag">GRE Tunneling</span> <span class="lab-tag">OSPF Area 0</span> <span class="lab-tag">eBGP / iBGP</span> <span class="lab-tag">PIM Sparse Mode</span> <span class="lab-tag">Static RP</span> <span class="lab-tag">Multicast over GRE</span> <span class="lab-tag">Default originate</span></div>
   </div>
   <div class="screenshot-box">
-    <div class="screenshot-placeholder">
-      <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      <span>topology screenshot coming soon</span>
-      <span style="font-size:10px;">replace with: lab-gre.png</span>
-    </div>
+    <img src="lab-gre.png" alt="GRE & Multicast over GRE topology" style="width:100%;display:block;">
   </div>
   <div class="section-block">
     <div class="block-label">COVERAGE</div>
-    <div class="topic-grid"><div class="topic-card"><div class="topic-card-title">GRE Tunneling</div><ul class="topic-list"><li>Tunnel source and destination</li><li>Tunnel mode gre ip</li><li>IP addressing on tunnel interface</li><li>Routing over the tunnel</li><li>Verify with show interface tunnel</li></ul></div><div class="topic-card"><div class="topic-card-title">Multicast — PIM</div><ul class="topic-list"><li>PIM sparse mode on all interfaces</li><li>Static RP configuration</li><li>ip pim rp-address</li><li>Verify (*,G) and (S,G) entries</li><li>show ip mroute</li></ul></div><div class="topic-card"><div class="topic-card-title">Multicast over GRE</div><ul class="topic-list"><li>Multicast traffic forwarded through tunnel</li><li>ip pim sparse-mode on tunnel interface</li><li>mroute verification across tunnel</li><li>IGMP on LAN-facing interfaces</li></ul></div><div class="topic-card"><div class="topic-card-title">Verification</div><ul class="topic-list"><li>ping multicast group address</li><li>show ip mroute</li><li>show ip pim neighbor</li><li>show ip pim rp mapping</li><li>debug ip mrouting</li></ul></div></div>
+    <div class="topic-grid">
+      <div class="topic-card"><div class="topic-card-title">GRE Tunnel</div><ul class="topic-list"><li>Tunnel source GigabitEthernet0/1 on both R1 and R2</li><li>Tunnel destination — ISP-facing physical IPs</li><li>10.10.10.0/30 tunnel addressing</li><li>OSPF P2P network type on tunnel (default)</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Routing — OSPF & BGP</div><ul class="topic-list"><li>OSPF area 0 across R1, R2, SW1, SW2</li><li>eBGP to ISP (AS200) from both R1 and R2</li><li>iBGP between R1 and R2 using loopbacks</li><li>update-source Loopback0 + next-hop-self</li><li>Default route from ISP via default-originate</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Multicast — PIM</div><ul class="topic-list"><li>ip multicast-routing on R1 and R2</li><li>ip pim sparse-mode on all interfaces including Tunnel0</li><li>Static RP: ip pim rp-address 192.168.100.1</li><li>PIM neighbor over GRE tunnel verified</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Addressing</div><ul class="topic-list"><li>R1 Lo0: 192.168.100.1 — PIM RP</li><li>R2 Lo0: 192.168.200.1</li><li>SW1 Lo0: 10.1.1.1, VLAN10: 10.10.0.1/24</li><li>SW2 Lo0: 10.2.2.1, VLAN20: 10.20.0.1/24</li><li>ISP: 203.0.113.128/25 and 203.0.113.0/25</li></ul></div>
+    </div>
   </div>
   <div class="divider"></div>
   <div class="section-block">
     <div class="block-label">NOTES</div>
-    <div class="notes-block">Covers a scenario where two sites need to exchange multicast traffic across a WAN link that does not natively support multicast. GRE encapsulates the multicast packets, and PIM sparse mode with a static RP handles group membership and tree building across the tunnel.</div>
+    <div class="notes-block">Built to cover GRE tunneling, multi-protocol routing, and multicast in a single cohesive topology. The GRE tunnel provides the site-to-site overlay, OSPF runs internally over it, and PIM sparse mode with a static RP on R1's loopback enables multicast forwarding across the tunnel. The ISP advertises a default route into both eBGP sessions which gets redistributed internally via OSPF default-information originate.</div>
   </div>
 </main>
 <footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
