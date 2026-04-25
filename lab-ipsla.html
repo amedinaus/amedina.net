@@ -91,29 +91,30 @@
 <main>
   <a href="labs.html" class="back-link">← back to labs</a>
   <div class="lab-header">
-    <div class="lab-status"><span class="status-dot dot-planned"></span><span style="color:var(--text-muted);">PLANNED</span></div>
+    <div class="lab-status"><span class="status-dot dot-done"></span><span style="color:var(--green);">COMPLETE</span></div>
     <h1 class="lab-title">Dual-ISP Failover (IP SLA)</h1>
-    <p class="lab-subtitle">Production-based lab — dual ISP links across two buildings with OSPF redistribution and IP SLA object tracking for automatic failover.</p>
+    <p class="lab-subtitle">Production-based lab  -  dual ISP links across two buildings with OSPF redistribution and IP SLA object tracking for automatic failover.</p>
     <div class="lab-tags"><span class="lab-tag">IP SLA</span> <span class="lab-tag">Object Tracking</span> <span class="lab-tag">OSPF Redistribution</span> <span class="lab-tag">Route Maps</span> <span class="lab-tag">Prefix Lists</span> <span class="lab-tag">Dual ISP</span> <span class="lab-tag">Failover</span> <span class="lab-tag">Static routes</span></div>
   </div>
   <div class="screenshot-box">
-    <div class="screenshot-placeholder">
-      <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      <span>topology screenshot coming soon</span>
-      <span style="font-size:10px;">replace with: lab-ipsla.png</span>
-    </div>
+    <img src="lab-ipsla.png" alt="Dual-ISP Failover IP SLA topology" style="width:100%;display:block;">
   </div>
   <div class="section-block">
     <div class="block-label">COVERAGE</div>
-    <div class="topic-grid"><div class="topic-card"><div class="topic-card-title">IP SLA</div><ul class="topic-list"><li>ICMP echo probes to ISP gateways</li><li>Frequency and threshold tuning</li><li>SLA schedule configuration</li><li>Verify with show ip sla statistics</li></ul></div><div class="topic-card"><div class="topic-card-title">Object Tracking</div><ul class="topic-list"><li>track ip sla reachability</li><li>Tracked object tied to static route</li><li>Floating static with higher AD</li><li>Automatic route removal on failure</li></ul></div><div class="topic-card"><div class="topic-card-title">OSPF Redistribution</div><ul class="topic-list"><li>Redistribute static into OSPF</li><li>Route maps to set cost/metric</li><li>Prefix lists to control what gets redistributed</li><li>ISP preference via metric manipulation</li></ul></div><div class="topic-card"><div class="topic-card-title">Topology</div><ul class="topic-list"><li>Two buildings, two ISPs</li><li>Primary ISP preferred via lower cost</li><li>Secondary ISP as floating fallback</li><li>IP SLA triggers route swap on primary failure</li></ul></div></div>
+    <div class="topic-grid">
+      <div class="topic-card"><div class="topic-card-title">TLS / L2 Extension</div><ul class="topic-list"><li>Transparent LAN Service simulated in CML</li><li>Main_TLS (primary) and Backup_TLS (failover)</li><li>Remote sites appear directly connected over L2</li><li>OSPF runs natively over the extended L2 domain</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">OSPF Area 0</div><ul class="topic-list"><li>Single area 0 across HQ, SiteA, SiteB</li><li>OSPF adjacencies over TLS links</li><li>Default route originated from Main Site</li><li>Internet reachability via Main Site uplink</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">IP SLA & Object Tracking</div><ul class="topic-list"><li>ICMP echo probes to Main_TLS gateway</li><li>ip sla schedule with continuous tracking</li><li>track ip sla reachability tied to default route</li><li>Floating static via Backup_TLS with higher AD</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Failover Behavior</div><ul class="topic-list"><li>Primary default route removed when SLA probe fails</li><li>Backup route auto-installs via object tracking</li><li>OSPF reconverges through Backup_TLS path</li><li>Verified failover timing and convergence</li></ul></div>
+    </div>/div>
   </div>
   <div class="divider"></div>
   <div class="section-block">
     <div class="block-label">NOTES</div>
-    <div class="notes-block">This lab is based on a real project at Pace University — a new building needed dual-ISP connectivity with automatic failover. OSPF redistribution with route maps set cost-based preference for the primary ISP, and IP SLA tracking removed the primary route when the ISP gateway stopped responding, automatically failing over to the secondary provider.</div>
+    <div class="notes-block">This lab is based on a real project at Pace University  -  a new building needed dual-ISP connectivity with automatic failover. OSPF redistribution with route maps set cost-based preference for the primary ISP, and IP SLA tracking removed the primary route when the ISP gateway stopped responding, automatically failing over to the secondary provider.</div>
   </div>
 </main>
-<footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
+<footer><span>amedina.net</span>  -  network engineer · security practitioner · new york</footer>
 <script>
   const progressBar = document.getElementById('scroll-progress');
   window.addEventListener('scroll', () => { const pct = document.documentElement.scrollHeight - window.innerHeight > 0 ? (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100 : 0; progressBar.style.width = pct + '%'; }, { passive: true });

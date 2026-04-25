@@ -93,7 +93,7 @@
   <div class="lab-header">
     <div class="lab-status"><span class="status-dot dot-planned"></span><span style="color:var(--text-muted);">PLANNED</span></div>
     <h1 class="lab-title">AAA Lab</h1>
-    <p class="lab-subtitle">TACACS+ authentication and authorization with local fallback, privilege levels, and command authorization — modeled after production ISE/TACACS+ deployment.</p>
+    <p class="lab-subtitle">TACACS+ authentication and authorization with local fallback, privilege levels, and command authorization  -  modeled after production ISE/TACACS+ deployment.</p>
     <div class="lab-tags"><span class="lab-tag">TACACS+</span> <span class="lab-tag">AAA</span> <span class="lab-tag">Local fallback</span> <span class="lab-tag">Privilege levels</span> <span class="lab-tag">Command auth</span> <span class="lab-tag">Accounting</span> <span class="lab-tag">ISE</span></div>
   </div>
   <div class="screenshot-box">
@@ -105,15 +105,15 @@
   </div>
   <div class="section-block">
     <div class="block-label">COVERAGE</div>
-    <div class="topic-grid"><div class="topic-card"><div class="topic-card-title">Authentication</div><ul class="topic-list"><li>aaa new-model</li><li>TACACS+ as primary method</li><li>Local as fallback</li><li>Login and enable authentication</li><li>SSH-only access (no telnet)</li></ul></div><div class="topic-card"><div class="topic-card-title">Authorization</div><ul class="topic-list"><li>Command authorization per privilege level</li><li>Exec authorization</li><li>Network authorization</li><li>ISE policy group mapping</li><li>Fallback to local if TACACS down</li></ul></div><div class="topic-card"><div class="topic-card-title">Privilege Levels</div><ul class="topic-list"><li>Level 1 — read-only show commands</li><li>Level 5 — interface and basic config</li><li>Level 15 — full access</li><li>Custom command sets per level</li><li>privilege exec level assignment</li></ul></div><div class="topic-card"><div class="topic-card-title">Accounting</div><ul class="topic-list"><li>Exec session accounting</li><li>Command accounting</li><li>Start-stop vs stop-only</li><li>Accounting to TACACS+ server</li><li>Verify with show accounting</li></ul></div></div>
+    <div class="topic-grid"><div class="topic-card"><div class="topic-card-title">Authentication</div><ul class="topic-list"><li>aaa new-model</li><li>TACACS+ as primary method</li><li>Local as fallback</li><li>Login and enable authentication</li><li>SSH-only access (no telnet)</li></ul></div><div class="topic-card"><div class="topic-card-title">Authorization</div><ul class="topic-list"><li>Command authorization per privilege level</li><li>Exec authorization</li><li>Network authorization</li><li>ISE policy group mapping</li><li>Fallback to local if TACACS down</li></ul></div><div class="topic-card"><div class="topic-card-title">Privilege Levels</div><ul class="topic-list"><li>Level 1  -  read-only show commands</li><li>Level 5  -  interface and basic config</li><li>Level 15  -  full access</li><li>Custom command sets per level</li><li>privilege exec level assignment</li></ul></div><div class="topic-card"><div class="topic-card-title">Accounting</div><ul class="topic-list"><li>Exec session accounting</li><li>Command accounting</li><li>Start-stop vs stop-only</li><li>Accounting to TACACS+ server</li><li>Verify with show accounting</li></ul></div></div>
   </div>
   <div class="divider"></div>
   <div class="section-block">
     <div class="block-label">NOTES</div>
-    <div class="notes-block">Modeled after the production TACACS+ setup used at Pace University with Cisco ISE as the TACACS+ server. The lab simulates the same tiered access model — helpdesk gets read-only, network team gets operational access, senior engineers get full privilege 15. Local fallback ensures access is maintained if ISE is unreachable.</div>
+    <div class="notes-block">Modeled after the production TACACS+ setup used at Pace University with Cisco ISE as the TACACS+ server. The lab simulates the same tiered access model  -  helpdesk gets read-only, network team gets operational access, senior engineers get full privilege 15. Local fallback ensures access is maintained if ISE is unreachable.</div>
   </div>
 </main>
-<footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
+<footer><span>amedina.net</span>  -  network engineer · security practitioner · new york</footer>
 <script>
   const progressBar = document.getElementById('scroll-progress');
   window.addEventListener('scroll', () => { const pct = document.documentElement.scrollHeight - window.innerHeight > 0 ? (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100 : 0; progressBar.style.width = pct + '%'; }, { passive: true });

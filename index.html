@@ -275,7 +275,7 @@
       <div class="cli-hero">
         <div class="cli-bar">
           <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
-          <span class="cli-title">summary.amedina.net — ssh angel@10.0.0.1</span>
+          <span class="cli-title">summary.amedina.net  -  ssh angel@10.0.0.1</span>
         </div>
         <div class="cli-body" id="cli-body"><span class="cli-cursor" id="cli-cursor"></span></div>
       </div>
@@ -393,7 +393,7 @@
   <div class="terminal">
     <div class="terminal-bar">
       <div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div>
-      <span class="terminal-title">bash — projects_and_labs</span>
+      <span class="terminal-title">bash  -  projects_and_labs</span>
     </div>
     <div class="terminal-body" id="lab-body"><span class="cli-cursor" id="lab-cursor"></span></div>
   </div>
@@ -404,7 +404,7 @@
         <span class="project-arrow">↗</span>
       </div>
       <div class="project-name">Lab Portfolio</div>
-      <p class="project-desc">6 labs covering OSPF multi-area, EIGRP, BGP, redistribution, PBR, DHCP snooping/DAI, GRE, multicast, IP SLA failover, and AAA — built in Cisco Modeling Labs for ENCOR/ENARSI study and production scenario practice.</p>
+      <p class="project-desc">6 labs covering OSPF multi-area, EIGRP, BGP, redistribution, PBR, DHCP snooping/DAI, GRE, multicast, IP SLA failover, and AAA  -  built in Cisco Modeling Labs for ENCOR/ENARSI study and production scenario practice.</p>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
         <span class="tag">6 labs</span>
         <span class="tag">ENCOR / ENARSI</span>
@@ -441,7 +441,7 @@
     <div class="skill-group"><div class="skill-group-title">Labs & Study</div><ul class="skill-list"><li>Cisco Modeling Labs (CML)</li><li>EVE-NG</li><li>INE Premium / Skill Dive</li><li>Boson NetSim</li><li>GNS3</li></ul></div>
   </div>
   <div class="cert-progress cert-progress-collapsed" id="cert-progress">
-    <div style="font-size:11px;letter-spacing:0.12em;color:var(--green);margin-bottom:1rem;">// CERTIFICATIONS — click to verify</div>
+    <div style="font-size:11px;letter-spacing:0.12em;color:var(--green);margin-bottom:1rem;">// CERTIFICATIONS  -  click to verify</div>
     <a class="cert-item" href="https://www.credly.com/badges/669db053-b3b2-4eb1-ac93-47f4a0345cd2/public_url" target="_blank"><div class="cert-check done">✓</div><span class="cert-name">Cisco Certified Specialist - Enterprise Core</span><span class="cert-date">APR 2026 · exp Apr 2029</span></a>
     <a class="cert-item" href="https://www.credly.com/badges/8035ac55-5dad-429f-a649-06bf81473830" target="_blank"><div class="cert-check done">✓</div><span class="cert-name">AWS Certified Cloud Practitioner</span><span class="cert-date">AUG 2025 · exp Aug 2028</span></a>
     <a class="cert-item" href="https://www.credly.com/badges/89824662-8069-43a4-8e94-96a917dc7d20" target="_blank"><div class="cert-check done">✓</div><span class="cert-name">CompTIA Security+</span><span class="cert-date">OCT 2023 · exp Oct 2026</span></a>
@@ -472,19 +472,19 @@
     <div class="blog-card" style="cursor:default;">
       <span class="blog-tag">TROUBLESHOOTING</span>
       <div class="blog-title">Diagnosing SISF CPU Spikes on Catalyst 9200L After CCC Provisioning</div>
-      <p class="blog-excerpt">After provisioning Catalyst 9200L switches through Cisco Catalyst Center, we started seeing CPU hit 100% driven by the SISF-switcher process. The switches became sluggish and management was intermittently unreachable. These were among the only 9200L models in our environment, so it took a while to isolate.<br><br>Root cause: the default device-tracking policy was tracking every host it saw on every port — including AP trunk ports carrying broadcast traffic from hundreds of wireless clients and the uplink. The switch was trying to create binding table entries for everything, which hammered the SISF-switcher process.<br><br>Fix: created a new DT trunk policy with <code style="color:var(--green);font-size:11px;">device-tracking policy DT_TRUNK_POLICY / device-role switch</code>, applied it to all trunk/uplink interfaces. Also disabled IPv6 tracking across all DT policies since we don't run IPv6. CPU dropped immediately back to normal. Deployed the fix as a Day-N CLI template in CCC so all future 9200L provisioning gets it automatically.</p>
+      <p class="blog-excerpt">After provisioning Catalyst 9200L switches through Cisco Catalyst Center, we started seeing CPU hit 100% driven by the SISF-switcher process. The switches became sluggish and management was intermittently unreachable. These were among the only 9200L models in our environment, so it took a while to isolate.<br><br>Root cause: the default device-tracking policy was tracking every host it saw on every port  -  including AP trunk ports carrying broadcast traffic from hundreds of wireless clients and the uplink. The switch was trying to create binding table entries for everything, which hammered the SISF-switcher process.<br><br>Fix: created a new DT trunk policy with <code style="color:var(--green);font-size:11px;">device-tracking policy DT_TRUNK_POLICY / device-role switch</code>, applied it to all trunk/uplink interfaces. Also disabled IPv6 tracking across all DT policies since we don't run IPv6. CPU dropped immediately back to normal. Deployed the fix as a Day-N CLI template in CCC so all future 9200L provisioning gets it automatically.</p>
       <div class="blog-meta">APR 2024 · CATALYST 9200L · SISF · CCC DAY-N TEMPLATE</div>
     </div>
     <div class="blog-card" style="cursor:default;">
       <span class="blog-tag">AUTOMATION</span>
       <div class="blog-title">Building a Network Device Lookup Tool with the Catalyst Center API</div>
-      <p class="blog-excerpt">Helpdesk tickets often come in with just an IP address or MAC and no other context. To speed up resolution, I built an internal web app using the Cisco Catalyst Center API that lets anyone on the IT team look up a device instantly — enter an IP or MAC and get back the connected switch, port, VLAN, device type, and user info. No CLI access required, no waiting on the network team for basic lookups. Built with Python on the backend querying the CCC REST API, with a simple web frontend anyone can use. Pending internal deployment.</p>
+      <p class="blog-excerpt">Helpdesk tickets often come in with just an IP address or MAC and no other context. To speed up resolution, I built an internal web app using the Cisco Catalyst Center API that lets anyone on the IT team look up a device instantly  -  enter an IP or MAC and get back the connected switch, port, VLAN, device type, and user info. No CLI access required, no waiting on the network team for basic lookups. Built with Python on the backend querying the CCC REST API, with a simple web frontend anyone can use. Pending internal deployment.</p>
       <div class="blog-meta">2024 · CATALYST CENTER API · PYTHON · INTERNAL TOOLING</div>
     </div>
     <div class="blog-card" style="cursor:default;">
       <span class="blog-tag">AUTOMATION</span>
-      <div class="blog-title">Standardizing 215 Switch Stacks with Netmiko — Security, STP, and VLAN Cleanup</div>
-      <p class="blog-excerpt">Over time, network configs drift. VLANs get created and forgotten, security settings go stale, and STP best practices get skipped during rushed deployments. I wrote a Python/Netmiko script to audit and remediate over 215 switch stacks across our three campuses in one push.<br><br>Changes deployed: updated passwords and encryption to meet current security standards, removed legacy weak hashing, enabled login banners and hardened VTY lines. For STP, enabled Rapid PVST+, configured Root Guard on all downlinks, and enabled BPDU Guard on access ports. For VLANs, pruned all unnecessary VLANs from trunk uplinks — both legacy networks that no longer existed and new VLANs that had no presence on those switches.<br><br>What would have taken weeks manually was done in hours. The same script now runs as part of our standard switch onboarding process.</p>
+      <div class="blog-title">Standardizing 215 Switch Stacks with Netmiko  -  Security, STP, and VLAN Cleanup</div>
+      <p class="blog-excerpt">Over time, network configs drift. VLANs get created and forgotten, security settings go stale, and STP best practices get skipped during rushed deployments. I wrote a Python/Netmiko script to audit and remediate over 215 switch stacks across our three campuses in one push.<br><br>Changes deployed: updated passwords and encryption to meet current security standards, removed legacy weak hashing, enabled login banners and hardened VTY lines. For STP, enabled Rapid PVST+, configured Root Guard on all downlinks, and enabled BPDU Guard on access ports. For VLANs, pruned all unnecessary VLANs from trunk uplinks  -  both legacy networks that no longer existed and new VLANs that had no presence on those switches.<br><br>What would have taken weeks manually was done in hours. The same script now runs as part of our standard switch onboarding process.</p>
       <div class="blog-meta">2024 · PYTHON · NETMIKO · STP · VLAN CLEANUP · 215 STACKS</div>
     </div>
   </div>
@@ -513,7 +513,7 @@
     </div>
   </div>
 </section>
-<footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
+<footer><span>amedina.net</span>  -  network engineer · security practitioner · new york</footer>
 <script>
   const body = document.getElementById('cli-body');
   const cursor = document.getElementById('cli-cursor');
@@ -553,7 +553,7 @@
   const progressBar = document.getElementById('scroll-progress');
   window.addEventListener('scroll', () => { const pct = document.documentElement.scrollHeight - window.innerHeight > 0 ? (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100 : 0; progressBar.style.width = pct + '%'; }, { passive: true });
   const form = document.getElementById('contact-form');
-  if (form) { form.addEventListener('submit', async (e) => { e.preventDefault(); const btn = form.querySelector('button[type="submit"]'); btn.textContent = 'sending...'; btn.disabled = true; try { const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' } }); if (res.ok) { form.reset(); document.getElementById('form-success').style.display = 'block'; btn.textContent = 'sent!'; } else { btn.textContent = 'error — try email instead'; btn.disabled = false; } } catch { btn.textContent = 'error — try email instead'; btn.disabled = false; } }); }
+  if (form) { form.addEventListener('submit', async (e) => { e.preventDefault(); const btn = form.querySelector('button[type="submit"]'); btn.textContent = 'sending...'; btn.disabled = true; try { const res = await fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'Accept': 'application/json' } }); if (res.ok) { form.reset(); document.getElementById('form-success').style.display = 'block'; btn.textContent = 'sent!'; } else { btn.textContent = 'error  -  try email instead'; btn.disabled = false; } } catch { btn.textContent = 'error  -  try email instead'; btn.disabled = false; } }); }
   const labBody = document.getElementById('lab-body');
   const labCursor = document.getElementById('lab-cursor');
   const labSequence = [

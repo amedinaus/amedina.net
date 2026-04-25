@@ -102,10 +102,10 @@
   <div class="section-block">
     <div class="block-label">COVERAGE</div>
     <div class="topic-grid">
-      <div class="topic-card"><div class="topic-card-title">GRE Tunnel</div><ul class="topic-list"><li>Tunnel source GigabitEthernet0/1 on both R1 and R2</li><li>Tunnel destination — ISP-facing physical IPs</li><li>10.10.10.0/30 tunnel addressing</li><li>OSPF P2P network type on tunnel (default)</li></ul></div>
-      <div class="topic-card"><div class="topic-card-title">Routing — OSPF & BGP</div><ul class="topic-list"><li>OSPF area 0 across R1, R2, SW1, SW2</li><li>eBGP to ISP (AS200) from both R1 and R2</li><li>iBGP between R1 and R2 using loopbacks</li><li>update-source Loopback0 + next-hop-self</li><li>Default route from ISP via default-originate</li></ul></div>
-      <div class="topic-card"><div class="topic-card-title">Multicast — PIM</div><ul class="topic-list"><li>ip multicast-routing on R1 and R2</li><li>ip pim sparse-mode on all interfaces including Tunnel0</li><li>Static RP: ip pim rp-address 192.168.100.1</li><li>PIM neighbor over GRE tunnel verified</li></ul></div>
-      <div class="topic-card"><div class="topic-card-title">Addressing</div><ul class="topic-list"><li>R1 Lo0: 192.168.100.1 — PIM RP</li><li>R2 Lo0: 192.168.200.1</li><li>SW1 Lo0: 10.1.1.1, VLAN10: 10.10.0.1/24</li><li>SW2 Lo0: 10.2.2.1, VLAN20: 10.20.0.1/24</li><li>ISP: 203.0.113.128/25 and 203.0.113.0/25</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">GRE Tunnel</div><ul class="topic-list"><li>Tunnel source GigabitEthernet0/1 on both R1 and R2</li><li>Tunnel destination  -  ISP-facing physical IPs</li><li>10.10.10.0/30 tunnel addressing</li><li>OSPF P2P network type on tunnel (default)</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Routing  -  OSPF & BGP</div><ul class="topic-list"><li>OSPF area 0 across R1, R2, SW1, SW2</li><li>eBGP to ISP (AS200) from both R1 and R2</li><li>iBGP between R1 and R2 using loopbacks</li><li>update-source Loopback0 + next-hop-self</li><li>Default route from ISP via default-originate</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Multicast  -  PIM</div><ul class="topic-list"><li>ip multicast-routing on R1 and R2</li><li>ip pim sparse-mode on all interfaces including Tunnel0</li><li>Static RP: ip pim rp-address 192.168.100.1</li><li>PIM neighbor over GRE tunnel verified</li></ul></div>
+      <div class="topic-card"><div class="topic-card-title">Addressing</div><ul class="topic-list"><li>R1 Lo0: 192.168.100.1  -  PIM RP</li><li>R2 Lo0: 192.168.200.1</li><li>SW1 Lo0: 10.1.1.1, VLAN10: 10.10.0.1/24</li><li>SW2 Lo0: 10.2.2.1, VLAN20: 10.20.0.1/24</li><li>ISP: 203.0.113.128/25 and 203.0.113.0/25</li></ul></div>
     </div>
   </div>
   <div class="divider"></div>
@@ -114,7 +114,7 @@
     <div class="notes-block">Built to cover GRE tunneling, multi-protocol routing, and multicast in a single cohesive topology. The GRE tunnel provides the site-to-site overlay, OSPF runs internally over it, and PIM sparse mode with a static RP on R1's loopback enables multicast forwarding across the tunnel. The ISP advertises a default route into both eBGP sessions which gets redistributed internally via OSPF default-information originate.</div>
   </div>
 </main>
-<footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
+<footer><span>amedina.net</span>  -  network engineer · security practitioner · new york</footer>
 <script>
   const progressBar = document.getElementById('scroll-progress');
   window.addEventListener('scroll', () => { const pct = document.documentElement.scrollHeight - window.innerHeight > 0 ? (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100 : 0; progressBar.style.width = pct + '%'; }, { passive: true });
