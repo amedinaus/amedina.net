@@ -91,17 +91,13 @@
 <main>
   <a href="labs.html" class="back-link">← back to labs</a>
   <div class="lab-header">
-    <div class="lab-status"><span class="status-dot dot-wip"></span><span style="color:var(--amber);">IN PROGRESS</span></div>
+    <div class="lab-status"><span class="status-dot dot-done"></span><span style="color:var(--green);">COMPLETE</span></div>
     <h1 class="lab-title">DHCP Snooping & DAI</h1>
     <p class="lab-subtitle">Layer 2 security lab covering DHCP snooping, dynamic ARP inspection, and IP source guard to harden the access layer against common L2 attacks.</p>
     <div class="lab-tags"><span class="lab-tag">DHCP Snooping</span> <span class="lab-tag">DAI</span> <span class="lab-tag">IP Source Guard</span> <span class="lab-tag">ARP ACL</span> <span class="lab-tag">L2 Security</span> <span class="lab-tag">Trusted ports</span> <span class="lab-tag">Binding table</span></div>
   </div>
   <div class="screenshot-box">
-    <div class="screenshot-placeholder">
-      <svg viewBox="0 0 24 24" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-      <span>topology screenshot coming soon</span>
-      <span style="font-size:10px;">replace with: lab-snooping.png</span>
-    </div>
+    <img src="lab-snooping.png" alt="DHCP Snooping & DAI topology" style="width:100%;display:block;">
   </div>
   <div class="section-block">
     <div class="block-label">COVERAGE</div>
@@ -110,7 +106,7 @@
   <div class="divider"></div>
   <div class="section-block">
     <div class="block-label">NOTES</div>
-    <div class="notes-block">Built to reinforce Layer 2 security concepts for ENCOR and real-world access layer hardening. The topology uses IOSvL2 switches with a simulated DHCP server, legitimate clients, and an attacker host to verify that snooping and DAI correctly drop rogue traffic.</div>
+    <div class="notes-block">This lab was built to reproduce and troubleshoot a production issue involving DHCP snooping and Option 82. When snooping is enabled, some switches insert Option 82 into DHCP requests by default — if the DHCP server or upstream switch is not configured to handle it, requests get dropped silently. The lab covers trust port configuration, Option 82 handling, DAI across VLANs, and IP source guard on the static client port (PC5).</div>
   </div>
 </main>
 <footer><span>amedina.net</span> — network engineer · security practitioner · new york</footer>
