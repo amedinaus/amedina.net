@@ -18,6 +18,16 @@
 <meta name="twitter:title" content="Angel Medina | Senior Network Engineer">
 <meta name="twitter:description" content="Senior Network Engineer managing enterprise infrastructure for 14,000+ users. Cisco CCNP Enterprise.">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23080c10'/><text x='4' y='22' font-family='monospace' font-weight='bold' font-size='14' fill='%2339d353'>AM</text></svg>">
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-GE8KE1347T"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-GE8KE1347T');
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -171,86 +181,22 @@
   .cli-body{padding:1.25rem;font-size:12px;line-height:2;min-height:220px;}
   .cli-prompt-user,.cli-prompt-priv{color:var(--green);}
   .cli-output{color:var(--text-secondary);}.cli-comment{color:#a0aab4;}.cli-val{color:var(--text-primary);}
-  body.light .cli-comment{color:var(--text-secondary);}
-  body.light .cli-output{color:var(--text-secondary);}
-  body.light .t-out{color:var(--text-secondary);}
-  body.light .t-comment{color:var(--text-secondary);}
   .cli-cursor{display:inline-block;width:7px;height:13px;background:var(--green);animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px;}
   .hero-left{opacity:1;}.hero-right{opacity:1;}
   @media(max-width:640px){nav ul{display:none;}.edu-grid{grid-template-columns:1fr;}.contact-block{flex-direction:column;}.hero::after{display:none;}.hero{padding:4rem 1.25rem 2rem;}.hero-name{font-size:clamp(28px,11vw,52px);}.hero-title{white-space:normal;font-size:11px;letter-spacing:0.06em;}section{padding:40px 1.25rem;}.section-title{margin-bottom:1.5rem;}.form-row{grid-template-columns:1fr;}}
-
-  /* ── LIGHT MODE ── */
-  body.light {
-    --bg: #f8f9fa;
-    --bg-card: #ffffff;
-    --bg-elevated: #f0f2f4;
-    --border: #d8dde3;
-    --border-bright: #b8c0c8;
-    --green: #1a7f37;
-    --green-dim: #aceebb;
-    --green-glow: rgba(26,127,55,0.12);
-    --green-subtle: rgba(26,127,55,0.08);
-    --cyan: #0969da;
-    --amber: #9a6700;
-    --text-primary: #1f2328;
-    --text-secondary: #424a53;
-    --text-muted: #6e7781;
-  }
-  body.light .hero::after { opacity: 0.3; }
-  body.light body::before { opacity: 0; }
-
-  /* ── THEME TOGGLE ── */
-  .theme-toggle {
-    background: none;
-    border: 1px solid var(--border-bright);
-    border-radius: var(--radius);
-    color: var(--text-secondary);
-    font-family: var(--mono);
-    font-size: 11px;
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.05em;
-  }
-  .theme-toggle:hover { border-color: var(--green); color: var(--green); }
-
-  /* ── COLLAPSED BLOG ── */
-  .blog-excerpt-short { display: block; }
-  .blog-excerpt-full { display: none; }
-  .blog-card.expanded .blog-excerpt-short { display: none; }
-  .blog-card.expanded .blog-excerpt-full { display: block; }
-  .blog-read-more {
-    font-size: 10px;
-    color: var(--green);
-    cursor: pointer;
-    margin-top: 8px;
-    display: inline-block;
-    letter-spacing: 0.05em;
-    background: none;
-    border: none;
-    font-family: var(--mono);
-    padding: 0;
-  }
-  .blog-read-more:hover { text-decoration: underline; }
-
-  /* ── COLLAPSED CERTS ── */
-  .cert-progress-collapsed .cert-item { display: none; }
-  .cert-progress-collapsed .cert-item:nth-child(-n+4) { display: flex; }
-  body.light nav { background: rgba(246,248,250,0.92); }
-  .cert-toggle {
-    font-size: 10px;
-    color: var(--green);
-    cursor: pointer;
-    margin-top: 8px;
-    display: inline-block;
-    letter-spacing: 0.05em;
-    background: none;
-    border: none;
-    font-family: var(--mono);
-    padding: 4px 0;
-  }
-  .cert-toggle:hover { text-decoration: underline; }
-
+  body.light{--bg:#f8f9fa;--bg-card:#ffffff;--bg-elevated:#f0f2f4;--border:#d8dde3;--border-bright:#b8c0c8;--green:#1a7f37;--green-dim:#aceebb;--green-glow:rgba(26,127,55,0.12);--green-subtle:rgba(26,127,55,0.08);--cyan:#0969da;--amber:#9a6700;--text-primary:#1f2328;--text-secondary:#424a53;--text-muted:#6e7781;}
+  body.light .hero::after{opacity:0.3;}
+  body.light nav{background:rgba(246,248,250,0.92);}
+  .theme-toggle{background:none;border:1px solid var(--border-bright);border-radius:var(--radius);color:var(--text-secondary);font-family:var(--mono);font-size:11px;padding:4px 10px;cursor:pointer;transition:all 0.2s;letter-spacing:0.05em;}
+  .theme-toggle:hover{border-color:var(--green);color:var(--green);}
+  .blog-excerpt-short{display:block;}.blog-excerpt-full{display:none;}
+  .blog-card.expanded .blog-excerpt-short{display:none;}.blog-card.expanded .blog-excerpt-full{display:block;}
+  .blog-read-more{font-size:10px;color:var(--green);cursor:pointer;margin-top:8px;display:inline-block;letter-spacing:0.05em;background:none;border:none;font-family:var(--mono);padding:0;}
+  .blog-read-more:hover{text-decoration:underline;}
+  .cert-progress-collapsed .cert-item{display:none;}
+  .cert-progress-collapsed .cert-item:nth-child(-n+4){display:flex;}
+  .cert-toggle{font-size:10px;color:var(--green);cursor:pointer;margin-top:8px;display:inline-block;letter-spacing:0.05em;background:none;border:none;font-family:var(--mono);padding:4px 0;}
+  .cert-toggle:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -399,17 +345,10 @@
   </div>
   <div class="projects-grid">
     <a href="labs.html" class="project-card" style="text-decoration:none;color:inherit;">
-      <div class="project-header">
-        <div class="project-icon">⌥</div>
-        <span class="project-arrow">↗</span>
-      </div>
+      <div class="project-header"><div class="project-icon">⌥</div><span class="project-arrow">↗</span></div>
       <div class="project-name">Lab Portfolio</div>
       <p class="project-desc">6 labs covering OSPF multi-area, EIGRP, BGP, redistribution, PBR, DHCP snooping/DAI, GRE, multicast, IP SLA failover, and AAA  -  built in Cisco Modeling Labs for ENCOR/ENARSI study and production scenario practice.</p>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;">
-        <span class="tag">6 labs</span>
-        <span class="tag">ENCOR / ENARSI</span>
-        <span class="tag">CML</span>
-      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"><span class="tag">6 labs</span><span class="tag">ENCOR / ENARSI</span><span class="tag">CML</span></div>
       <div class="project-status status-active" style="margin-top:10px;">● 3 in progress · 3 planned</div>
     </a>
     <a class="project-card" href="https://github.com/amedinaus/Networking" target="_blank">
@@ -425,8 +364,6 @@
       <div class="project-status status-live">● complete / pending deployment</div>
     </div>
   </div>
-
-  <!-- LAB TOPOLOGIES header removed, card is now in grid above -->
 </section>
 <div class="divider"></div>
 <section id="skills">
@@ -513,7 +450,7 @@
     </div>
   </div>
 </section>
-<footer><span>amedina.net</span>  -  network engineer · security practitioner · new york</footer>
+<footer><span>amedina.net</span>  -  network engineer · security · automation · new york</footer>
 <script>
   const body = document.getElementById('cli-body');
   const cursor = document.getElementById('cli-cursor');
@@ -593,29 +530,13 @@
   const sections = document.querySelectorAll('section[id]');
   const navLinks = document.querySelectorAll('nav a[href^="#"]');
   window.addEventListener('scroll', () => { let current = ''; sections.forEach(s => { if (window.scrollY >= s.offsetTop - 80) current = s.id; }); navLinks.forEach(a => { a.style.color = a.getAttribute('href') === '#' + current ? 'var(--green)' : ''; }); }, { passive: true });
-
-  // ── THEME TOGGLE ──
   const themeBtn = document.getElementById('theme-toggle');
   const savedTheme = localStorage.getItem('theme');
   if (savedTheme === 'light') { document.body.classList.add('light'); themeBtn.textContent = '◑ dark'; }
-  themeBtn.addEventListener('click', () => {
-    document.body.classList.toggle('light');
-    const isLight = document.body.classList.contains('light');
-    themeBtn.textContent = isLight ? '◑ dark' : '◐ light';
-    localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  });
-
-  // ── CERT TOGGLE ──
+  themeBtn.addEventListener('click', () => { document.body.classList.toggle('light'); const isLight = document.body.classList.contains('light'); themeBtn.textContent = isLight ? '◑ dark' : '◐ light'; localStorage.setItem('theme', isLight ? 'light' : 'dark'); });
   const certToggle = document.getElementById('cert-toggle');
   const certProgress = document.getElementById('cert-progress');
-  if (certToggle) {
-    certToggle.addEventListener('click', () => {
-      certProgress.classList.toggle('cert-progress-collapsed');
-      certToggle.textContent = certProgress.classList.contains('cert-progress-collapsed') ? 'show all certifications ↓' : 'collapse ↑';
-    });
-  }
-
-  // ── BLOG COLLAPSE ──
+  if (certToggle) { certToggle.addEventListener('click', () => { certProgress.classList.toggle('cert-progress-collapsed'); certToggle.textContent = certProgress.classList.contains('cert-progress-collapsed') ? 'show all certifications ↓' : 'collapse ↑'; }); }
   document.querySelectorAll('.blog-card').forEach(card => {
     const excerpt = card.querySelector('.blog-excerpt');
     if (!excerpt) return;
@@ -625,11 +546,7 @@
     const btn = document.createElement('button');
     btn.className = 'blog-read-more';
     btn.textContent = 'read more →';
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      card.classList.toggle('expanded');
-      btn.textContent = card.classList.contains('expanded') ? 'collapse ↑' : 'read more →';
-    });
+    btn.addEventListener('click', (e) => { e.stopPropagation(); card.classList.toggle('expanded'); btn.textContent = card.classList.contains('expanded') ? 'collapse ↑' : 'read more →'; });
     card.appendChild(btn);
   });
 </script>
