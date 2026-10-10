@@ -319,12 +319,12 @@ const LIBRARY = [
 ];
 
 const state = {
-  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], overrides: [], kudos: [], challenges: [], muscles: {},
-  mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, ovMap: {},
+  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], settings: [], overrides: [], kudos: [], challenges: [], muscles: {},
+  mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, setMap: {}, ovMap: {},
   unit: 'lb',
   tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, focusEx: '',
   crewRange: 'week', crewMetric: 'volume', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
-  calMonth: '', calWho: 'all',
+  calMonth: '', calWho: 'all', restDay: '',
   restOn: true, rest: null, pending: [], loaded: false, error: ''
 };
 
@@ -527,7 +527,8 @@ async function loadAll() {
     fetchAll('schedule_overrides', 'profile_id, date, routine_id', (q) => q.order('profile_id').order('date')),
     fetchAll('kudos', 'id, workout_id, from_profile', (q) => q.order('id')),
     fetchAll('challenges', 'id, creator_id, name, exercise, start_date, end_date, created_at', (q) => q.order('created_at').order('id')),
-    fetchAll('exercise_muscles', 'key, muscle', (q) => q.order('key'))
+    fetchAll('exercise_muscles', 'key, muscle', (q) => q.order('key')),
+    fetchAll('schedule_settings', 'profile_id, mode, cycle, pos, pos_date', (q) => q.order('profile_id')).catch(() => [])
   ]);
   state.profiles = r[0];
   state.workouts = r[1].map(normSet);
@@ -539,6 +540,7 @@ async function loadAll() {
   state.challenges = r[7];
   state.muscles = {};
   r[8].forEach((m) => { state.muscles[m.key] = m.muscle; });
+  state.settings = r[9].map((x) => Object.assign({}, x, { cycle: Array.isArray(x.cycle) ? x.cycle : [] }));
   derive();
 }
 
@@ -581,6 +583,8 @@ function derive() {
   state.kudos.forEach((k) => { (state.kudosBy[k.workout_id] = state.kudosBy[k.workout_id] || new Set()).add(k.from_profile); });
   state.schMap = {};
   state.schedule.forEach((s) => { state.schMap[s.profile_id + '|' + s.weekday] = s; });
+  state.setMap = {};
+  state.settings.forEach((s) => { state.setMap[s.profile_id] = s; });
   state.ovMap = {};
   state.overrides.forEach((o) => { state.ovMap[o.profile_id + '|' + o.date] = o; });
 }
@@ -683,11 +687,38 @@ function suggestion(k, name, before) {
 
 /* plan, schedule, status */
 
-function hasSchedule(pid) { return state.schedule.some((s) => s.profile_id === pid); }
+function settingsOf(pid) { return state.setMap[pid] || null; }
+function scheduleMode(pid) { const s = settingsOf(pid); return s && s.mode === 'rotation' ? 'rotation' : 'weekly'; }
+function hasSchedule(pid) {
+  if (scheduleMode(pid) === 'rotation') return settingsOf(pid).cycle.length > 0;
+  return state.schedule.some((s) => s.profile_id === pid);
+}
+
+/* Rotation: the cycle only moves forward when you train. Rest slots use up a calendar day,
+   routine slots wait for you (a missed day just pushes the split back). */
+function rotationPos(pid, t) {
+  const s = settingsOf(pid);
+  if (!s || s.mode !== 'rotation' || !s.cycle.length) return null;
+  const n = s.cycle.length;
+  let p = (((s.pos || 0) % n) + n) % n;
+  let d = s.pos_date || t;
+  let guard = 0;
+  while (d < t && s.cycle[p] == null && guard < n) { p = (p + 1) % n; d = addDays(d, 1); guard += 1; }
+  if (d < t) d = t;
+  return { p, d, n, cycle: s.cycle };
+}
 
 function planFor(pid, date) {
   const ov = state.ovMap[pid + '|' + date];
   if (ov) return { routine: ov.routine_id ? (state.routineById[ov.routine_id] || null) : null, source: 'override' };
+  if (scheduleMode(pid) === 'rotation') {
+    const t = today();
+    const r = date < t ? null : rotationPos(pid, t);
+    if (!r) return { routine: null, source: 'none' };
+    const idx = ((((r.p + daysBetween(r.d, date)) % r.n) + r.n) % r.n);
+    const id = r.cycle[idx];
+    return { routine: id ? (state.routineById[id] || null) : null, source: 'rotation' };
+  }
   const s = state.schMap[pid + '|' + weekdayIdx(date)];
   if (s && s.routine_id) return { routine: state.routineById[s.routine_id] || null, source: 'weekly' };
   return { routine: null, source: s ? 'weekly' : 'none' };
@@ -702,7 +733,7 @@ function statusOf(p) {
   rows.forEach((r) => { if (r.date > last) last = r.date; });
   const trainedToday = rows.some((r) => r.date === t);
   let idle = Math.max(0, daysBetween(last, t) - 1);
-  if (hasSchedule(p.id) && idle > 0) {
+  if (scheduleMode(p.id) === 'weekly' && hasSchedule(p.id) && idle > 0) {
     for (let d = addDays(last, 1); d < t; d = addDays(d, 1)) {
       if (!planFor(p.id, d).routine) idle -= 1;
     }
@@ -776,8 +807,58 @@ function addExercise(name) {
 function loadRoutine(r) {
   if (state.extraDate !== state.logDate) { state.extraDate = state.logDate; state.extra = []; }
   r.exercises.forEach((n) => { if (!state.extra.some((x) => key(x) === key(n))) state.extra.push(n); });
+  state.restDay = '';
   render();
   toast(r.name + ' loaded');
+  if (state.logDate === today()) advanceRotation(r.id);
+}
+
+async function saveSettings(patch) {
+  const me = state.me.id;
+  const cur = settingsOf(me) || { profile_id: me, mode: 'weekly', cycle: [], pos: 0, pos_date: today() };
+  const row = Object.assign({}, cur, patch);
+  if (row.cycle.length && row.pos >= row.cycle.length) row.pos = 0;
+  const body = { profile_id: me, mode: row.mode, cycle: row.cycle, pos: row.pos || 0, pos_date: row.pos_date || today() };
+  const res = await db.from('schedule_settings').upsert(body, { onConflict: 'profile_id' });
+  if (res.error) { toast(res.error.message + ' (run setup4.sql?)', 'err'); return false; }
+  state.settings = state.settings.filter((s) => s.profile_id !== me).concat([Object.assign({}, row, body)]);
+  derive();
+  render();
+  return true;
+}
+
+/* training a routine from a rotating split moves the split past it */
+async function advanceRotation(rid) {
+  const st = settingsOf(state.me.id);
+  if (!st || st.mode !== 'rotation' || !st.cycle.length) return;
+  const t = today();
+  const r = rotationPos(state.me.id, t);
+  if (r.d > t && st.cycle[(r.p - 1 + r.n) % r.n] === rid) return;
+  let idx = -1;
+  for (let i = 0; i < r.n; i += 1) {
+    const j = (r.p + i) % r.n;
+    if (st.cycle[j] === rid) { idx = j; break; }
+  }
+  if (idx < 0) return;
+  await saveSettings({ pos: (idx + 1) % r.n, pos_date: addDays(t, 1) });
+}
+
+/* "push, pull, legs, rest" -> cycle of routine ids and nulls */
+function parseSplit(text, routines) {
+  const raw = text.indexOf(',') >= 0 ? text.split(',') : text.trim().split(/\s+/);
+  const out = [];
+  for (let i = 0; i < raw.length; i += 1) {
+    const w = raw[i].trim().toLowerCase();
+    if (!w) continue;
+    if (['r', 'rest', 'off', 'x', '-'].indexOf(w) >= 0) { out.push(null); continue; }
+    let m = routines.filter((r) => r.name.toLowerCase() === w);
+    if (m.length !== 1) m = routines.filter((r) => r.name.toLowerCase().indexOf(w) === 0);
+    if (m.length !== 1) m = routines.filter((r) => r.name.toLowerCase().indexOf(w) >= 0);
+    if (m.length !== 1) return { error: m.length ? '"' + raw[i].trim() + '" matches more than one routine' : 'No routine matches "' + raw[i].trim() + '"' };
+    out.push(m[0].id);
+  }
+  if (!out.length) return { error: 'Type your split, like: push, pull, legs, rest' };
+  return { cycle: out };
 }
 
 async function logWeight(wDisp, date) {
@@ -842,6 +923,8 @@ async function deleteRoutine(id) {
   if (res.error) { toast(res.error.message, 'err'); return false; }
   state.routines = state.routines.filter((r) => r.id !== id);
   state.schedule = state.schedule.map((s) => (s.routine_id === id ? Object.assign({}, s, { routine_id: null }) : s));
+  const st = settingsOf(state.me.id);
+  if (st && st.cycle.indexOf(id) >= 0) await saveSettings({ cycle: st.cycle.map((x) => (x === id ? null : x)) });
   state.overrides = state.overrides.map((o) => (o.routine_id === id ? Object.assign({}, o, { routine_id: null }) : o));
   derive();
   render();
@@ -918,14 +1001,14 @@ const TEMPLATES = [
     ['Push', ['Bench Press', 'Overhead Press', 'Incline Dumbbell Press', 'Lateral Raise', 'Triceps Pushdown']],
     ['Pull', ['Barbell Row', 'Lat Pulldown', 'Cable Row', 'Face Pull', 'Dumbbell Curl']],
     ['Legs', ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise']]
-  ], days: [[0, 0], [2, 1], [4, 2]] },
+  ], days: [[0, 0], [2, 1], [4, 2]], cycle: [0, 1, 2, null], cycleBlurb: 'Push, Pull, Legs, Rest' },
   { name: 'Upper / Lower', blurb: '4 days: Mon, Tue, Thu, Fri', routines: [
     ['Upper', ['Bench Press', 'Barbell Row', 'Overhead Press', 'Lat Pulldown', 'Dumbbell Curl', 'Triceps Pushdown']],
     ['Lower', ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise']]
-  ], days: [[0, 0], [1, 1], [3, 0], [4, 1]] },
+  ], days: [[0, 0], [1, 1], [3, 0], [4, 1]], cycle: [0, 1, null], cycleBlurb: 'Upper, Lower, Rest' },
   { name: 'Full body', blurb: '3 days: Mon, Wed, Fri', routines: [
     ['Full body', ['Squat', 'Bench Press', 'Barbell Row', 'Overhead Press', 'Romanian Deadlift']]
-  ], days: [[0, 0], [2, 0], [4, 0]] }
+  ], days: [[0, 0], [2, 0], [4, 0]], cycle: [0, null], cycleBlurb: 'Full body, Rest' }
 ];
 
 async function applyTemplate(t) {
@@ -935,8 +1018,12 @@ async function applyTemplate(t) {
     if (!row) return;
     made.push(row);
   }
-  for (let i = 0; i < t.days.length; i += 1) {
-    await setWeekday(t.days[i][0], made[t.days[i][1]].id);
+  if (scheduleMode(state.me.id) === 'rotation') {
+    await saveSettings({ mode: 'rotation', cycle: t.cycle.map((i) => (i === null ? null : made[i].id)), pos: 0, pos_date: today() });
+  } else {
+    for (let i = 0; i < t.days.length; i += 1) {
+      await setWeekday(t.days[i][0], made[t.days[i][1]].id);
+    }
   }
   toast(t.name + ' set up');
 }
@@ -1267,7 +1354,7 @@ function openDaySheet(date) {
     const block = h('div', { class: 'card' },
       h('div', { class: 'lrow' },
         h('div', { class: 'l lbname' }, avatar(p, 22), p.username, mine ? h('em', { text: 'YOU' }) : null),
-        h('div', { class: 'r' }, h('span', { class: 'pill ' + (plan.routine ? 'ok' : 'rest'), text: planned.toUpperCase() }))
+        h('div', { class: 'r' }, h('span', { class: 'pill ' + (plan.routine ? 'ok' : 'off'), text: planned.toUpperCase() }))
       ),
       groups.length
         ? groups.map((g) => h('div', { class: 'lrow' }, h('div', { class: 'l', text: g.name }), h('div', { class: 'r muted', text: g.n + (g.n === 1 ? ' set' : ' sets') })))
@@ -1276,7 +1363,7 @@ function openDaySheet(date) {
     if (mine) {
       const cur = plan.source === 'override' ? (plan.routine ? plan.routine.id : 'rest') : 'default';
       const sel = h('select', { class: 'pick', style: 'margin-top:10px' },
-        h('option', { value: 'default', selected: cur === 'default', text: 'Use my weekly plan' }),
+        h('option', { value: 'default', selected: cur === 'default', text: 'Use my plan' }),
         h('option', { value: 'rest', selected: cur === 'rest', text: 'Rest this day' }),
         state.routines.filter((r) => r.profile_id === state.me.id).map((r) => h('option', { value: r.id, selected: cur === r.id, text: 'Train: ' + r.name }))
       );
@@ -1508,15 +1595,36 @@ function renderLog() {
     h('button', { class: 'chip', onclick: () => openPlates(0), text: 'plate calculator' })
   ));
 
-  if (plan.routine) {
+  if (!order.length && state.restDay === date) {
     wrap.appendChild(h('div', { class: 'banner' },
-      h('div', null, h('small', { text: isToday ? 'PLANNED FOR TODAY' : 'PLANNED FOR THIS DAY' }), h('b', { text: plan.routine.name })),
-      h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'load' })
+      h('div', null, h('small', { text: 'REST DAY' }), h('b', { text: 'Recover. Come back stronger.' })),
+      h('button', { class: 'btn sm', onclick: () => { state.restDay = ''; render(); }, text: 'train anyway' })
     ));
   } else if (!order.length && myRoutines.length) {
+    const rotation = scheduleMode(state.me.id) === 'rotation';
+    const plannedRest = hasSchedule(state.me.id) && !plan.routine;
+    if (plan.routine) {
+      wrap.appendChild(h('div', { class: 'banner' },
+        h('div', null,
+          h('small', { text: rotation ? 'NEXT IN YOUR SPLIT' : (isToday ? 'PLANNED FOR TODAY' : 'PLANNED FOR THIS DAY') }),
+          h('b', { text: plan.routine.name })
+        ),
+        h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'start' })
+      ));
+    }
+    const others = myRoutines.filter((r) => !plan.routine || r.id !== plan.routine.id);
     wrap.appendChild(h('div', { class: 'chiprow' },
-      h('span', { class: 'muted', text: 'start from:' }),
-      myRoutines.map((r) => h('button', { class: 'chip', onclick: () => loadRoutine(r), text: r.name }))
+      h('span', { class: 'muted', text: plan.routine ? 'or train:' : (plannedRest ? 'rest day in your plan, or train:' : 'what are we training?') }),
+      others.map((r) => h('button', { class: 'chip', onclick: () => loadRoutine(r), text: r.name })),
+      h('button', {
+        class: 'chip',
+        onclick: async () => {
+          state.restDay = date;
+          if (scheduleMode(state.me.id) === 'weekly' && plan.routine) await setOverride(date, null);
+          else render();
+        },
+        text: 'rest day'
+      })
     ));
   }
 
@@ -1534,6 +1642,99 @@ function renderLog() {
 }
 
 /* PLAN tab */
+
+function scheduleCard(mine, mode) {
+  const me = state.me.id;
+  const st = settingsOf(me);
+  const card = h('div', { class: 'card' });
+  card.appendChild(seg([['weekly', 'by weekday'], ['rotation', 'rotating split']], mode, (v) => {
+    if (v !== mode) saveSettings({ mode: v, pos: st ? st.pos : 0, pos_date: st && st.pos_date ? st.pos_date : today() });
+  }));
+
+  if (mode === 'weekly') {
+    card.appendChild(h('div', { class: 'muted', style: 'margin-bottom:8px', text: 'Same plan every week, tied to the day of the week.' }));
+    WD.forEach((label, wd) => {
+      const cur = state.schMap[me + '|' + wd];
+      const curId = cur && cur.routine_id ? cur.routine_id : 'rest';
+      const sel = h('select', { class: 'pick' },
+        h('option', { value: 'rest', selected: curId === 'rest', text: 'Rest' }),
+        mine.map((r) => h('option', { value: r.id, selected: curId === r.id, text: r.name })),
+        h('option', { value: 'new', text: '+ new routine...' })
+      );
+      sel.addEventListener('change', () => {
+        if (sel.value === 'new') {
+          sel.value = curId;
+          openRoutineEditor({ id: null, name: '', exercises: [], assignWd: wd });
+          return;
+        }
+        setWeekday(wd, sel.value === 'rest' ? null : sel.value);
+      });
+      card.appendChild(h('div', { class: 'wk' }, h('span', { class: 'muted', text: label.toUpperCase() }), sel));
+    });
+  } else {
+    const cycle = st ? st.cycle : [];
+    card.appendChild(h('div', { class: 'muted', style: 'margin-bottom:8px', text: 'Goes in order and only moves forward when you train. Miss a day and the split just waits. A Rest slot takes one calendar day.' }));
+    if (cycle.length) {
+      const r = rotationPos(me, today());
+      const todayPlan = planFor(me, today());
+      const nxt = r ? r.cycle[(r.p + (r.d > today() ? 0 : 1)) % r.n] : null;
+      card.appendChild(h('div', { class: 'hint' },
+        h('div', null, r && r.d > today() ? 'Trained today: ' : 'Today: ', h('b', { text: todayPlan.routine ? todayPlan.routine.name : 'Rest' })),
+        h('div', null, 'Then: ', h('b', { text: nxt && state.routineById[nxt] ? state.routineById[nxt].name : 'Rest' }))
+      ));
+    }
+    const setCycle = (c) => saveSettings({ cycle: c, pos: st ? Math.min(st.pos, Math.max(0, c.length - 1)) : 0, pos_date: st && st.pos_date ? st.pos_date : today() });
+    cycle.forEach((id, i) => {
+      const sel = h('select', { class: 'pick', style: 'margin:0;flex:1;min-width:0' },
+        h('option', { value: 'rest', selected: id == null, text: 'Rest' }),
+        mine.map((r) => h('option', { value: r.id, selected: id === r.id, text: r.name }))
+      );
+      sel.addEventListener('change', () => { const c = cycle.slice(); c[i] = sel.value === 'rest' ? null : sel.value; setCycle(c); });
+      const move = (dir) => {
+        const j = i + dir;
+        if (j < 0 || j >= cycle.length) return;
+        const c = cycle.slice(); const t = c[i]; c[i] = c[j]; c[j] = t; setCycle(c);
+      };
+      card.appendChild(h('div', { class: 'xrow' },
+        h('span', { class: 'muted', style: 'flex:none;width:20px', text: String(i + 1) }),
+        sel,
+        h('button', { title: 'Move up', onclick: () => move(-1), text: '↑' }),
+        h('button', { title: 'Move down', onclick: () => move(1), text: '↓' }),
+        h('button', { title: 'Remove', onclick: () => { const c = cycle.slice(); c.splice(i, 1); setCycle(c); }, text: '×' })
+      ));
+    });
+    card.appendChild(h('div', { class: 'btnrow' },
+      h('button', { class: 'btn ghost', onclick: () => setCycle(cycle.concat([null])), text: '+ rest' }),
+      h('button', {
+        class: 'btn ghost',
+        onclick: () => { if (!mine.length) { openRoutineEditor(); return; } setCycle(cycle.concat([mine[0].id])); },
+        text: '+ routine'
+      })
+    ));
+    if (mine.length) {
+      const q = h('input', { class: 'field', style: 'margin:10px 0 6px', placeholder: 'or type it: push, pull, legs, rest', autocomplete: 'off' });
+      const apply = () => {
+        const res = parseSplit(q.value, mine);
+        if (res.error) { toast(res.error, 'err'); return; }
+        saveSettings({ cycle: res.cycle, pos: 0, pos_date: today() });
+      };
+      q.addEventListener('keydown', (e) => { if (e.key === 'Enter') apply(); });
+      card.appendChild(q);
+      card.appendChild(h('button', { class: 'btn ghost', onclick: apply, text: 'set split from text' }));
+    }
+    if (cycle.length) {
+      card.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => saveSettings({ pos: 0, pos_date: today() }), text: 'restart at day 1 today' }));
+    }
+  }
+
+  if (!mine.length) {
+    card.appendChild(h('div', { class: 'muted', style: 'margin:12px 0 6px', text: 'No routines yet. Start from a template (you can edit it after) or build your own below.' }));
+    TEMPLATES.forEach((t) => {
+      card.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:6px', onclick: () => applyTemplate(t) }, t.name + '  (' + (mode === 'rotation' ? t.cycleBlurb : t.blurb) + ')'));
+    });
+  }
+  return card;
+}
 
 function renderPlan() {
   const wrap = h('div', { class: 'fade' });
@@ -1592,33 +1793,9 @@ function renderPlan() {
   ));
 
   const mine = state.routines.filter((r) => r.profile_id === state.me.id);
-  wrap.appendChild(h('h2', null, 'My weekly plan', h('small', { text: 'REPEATS EVERY WEEK' })));
-  const wk = h('div', { class: 'card' });
-  WD.forEach((label, wd) => {
-    const cur = state.schMap[state.me.id + '|' + wd];
-    const curId = cur && cur.routine_id ? cur.routine_id : 'rest';
-    const sel = h('select', { class: 'pick' },
-      h('option', { value: 'rest', selected: curId === 'rest', text: 'Rest' }),
-      mine.map((r) => h('option', { value: r.id, selected: curId === r.id, text: r.name })),
-      h('option', { value: 'new', text: '+ new routine...' })
-    );
-    sel.addEventListener('change', () => {
-      if (sel.value === 'new') {
-        sel.value = curId;
-        openRoutineEditor({ id: null, name: '', exercises: [], assignWd: wd });
-        return;
-      }
-      setWeekday(wd, sel.value === 'rest' ? null : sel.value);
-    });
-    wk.appendChild(h('div', { class: 'wk' }, h('span', { class: 'muted', text: label.toUpperCase() }), sel));
-  });
-  if (!mine.length) {
-    wk.appendChild(h('div', { class: 'muted', style: 'margin:10px 0 8px', text: 'Everything is Rest until you have routines. Start from a template (you can edit it after) or pick "+ new routine" on any day.' }));
-    TEMPLATES.forEach((t) => {
-      wk.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:6px', onclick: () => applyTemplate(t) }, t.name + '  (' + t.blurb + ')'));
-    });
-  }
-  wrap.appendChild(wk);
+  const mode = scheduleMode(state.me.id);
+  wrap.appendChild(h('h2', null, 'My schedule', h('small', { text: mode === 'weekly' ? 'REPEATS EVERY WEEK' : 'ROTATES WHEN YOU TRAIN' })));
+  wrap.appendChild(scheduleCard(mine, mode));
 
   wrap.appendChild(h('h2', null, 'My routines'));
   const rc = h('div', { class: 'card' });
