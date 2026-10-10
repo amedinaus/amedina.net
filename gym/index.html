@@ -834,7 +834,7 @@ async function saveRoutine(d) {
   state.routines = state.routines.filter((r) => r.id !== row.id).concat([row]);
   derive();
   render();
-  return true;
+  return row;
 }
 
 async function deleteRoutine(id) {
@@ -911,6 +911,34 @@ async function setMuscle(name, muscle) {
   if (res.error) { toast(res.error.message, 'err'); return; }
   state.muscles[k] = muscle;
   render();
+}
+
+const TEMPLATES = [
+  { name: 'Push / Pull / Legs', blurb: '3 days: Mon, Wed, Fri', routines: [
+    ['Push', ['Bench Press', 'Overhead Press', 'Incline Dumbbell Press', 'Lateral Raise', 'Triceps Pushdown']],
+    ['Pull', ['Barbell Row', 'Lat Pulldown', 'Cable Row', 'Face Pull', 'Dumbbell Curl']],
+    ['Legs', ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise']]
+  ], days: [[0, 0], [2, 1], [4, 2]] },
+  { name: 'Upper / Lower', blurb: '4 days: Mon, Tue, Thu, Fri', routines: [
+    ['Upper', ['Bench Press', 'Barbell Row', 'Overhead Press', 'Lat Pulldown', 'Dumbbell Curl', 'Triceps Pushdown']],
+    ['Lower', ['Squat', 'Romanian Deadlift', 'Leg Press', 'Leg Curl', 'Calf Raise']]
+  ], days: [[0, 0], [1, 1], [3, 0], [4, 1]] },
+  { name: 'Full body', blurb: '3 days: Mon, Wed, Fri', routines: [
+    ['Full body', ['Squat', 'Bench Press', 'Barbell Row', 'Overhead Press', 'Romanian Deadlift']]
+  ], days: [[0, 0], [2, 0], [4, 0]] }
+];
+
+async function applyTemplate(t) {
+  const made = [];
+  for (let i = 0; i < t.routines.length; i += 1) {
+    const row = await saveRoutine({ id: null, name: t.routines[i][0], exercises: t.routines[i][1].slice() });
+    if (!row) return;
+    made.push(row);
+  }
+  for (let i = 0; i < t.days.length; i += 1) {
+    await setWeekday(t.days[i][0], made[t.days[i][1]].id);
+  }
+  toast(t.name + ' set up');
 }
 
 /* rest timer (fixed 3:00 after every working set) */
@@ -1193,7 +1221,11 @@ function openRoutineEditor(d) {
   save.addEventListener('click', async () => {
     if (!d.name.trim()) { toast('Name the routine', 'err'); return; }
     if (!d.exercises.length) { toast('Add at least one exercise', 'err'); return; }
-    if (await saveRoutine(d)) closeSheet();
+    const row = await saveRoutine(d);
+    if (row) {
+      closeSheet();
+      if (!d.id && d.assignWd != null) await setWeekday(d.assignWd, row.id);
+    }
   });
   const btns = [save];
   if (d.id) {
@@ -1567,12 +1599,25 @@ function renderPlan() {
     const curId = cur && cur.routine_id ? cur.routine_id : 'rest';
     const sel = h('select', { class: 'pick' },
       h('option', { value: 'rest', selected: curId === 'rest', text: 'Rest' }),
-      mine.map((r) => h('option', { value: r.id, selected: curId === r.id, text: r.name }))
+      mine.map((r) => h('option', { value: r.id, selected: curId === r.id, text: r.name })),
+      h('option', { value: 'new', text: '+ new routine...' })
     );
-    sel.addEventListener('change', () => setWeekday(wd, sel.value === 'rest' ? null : sel.value));
+    sel.addEventListener('change', () => {
+      if (sel.value === 'new') {
+        sel.value = curId;
+        openRoutineEditor({ id: null, name: '', exercises: [], assignWd: wd });
+        return;
+      }
+      setWeekday(wd, sel.value === 'rest' ? null : sel.value);
+    });
     wk.appendChild(h('div', { class: 'wk' }, h('span', { class: 'muted', text: label.toUpperCase() }), sel));
   });
-  if (!mine.length) wk.appendChild(h('div', { class: 'muted', style: 'margin-top:8px', text: 'Make a routine below, then assign it to days.' }));
+  if (!mine.length) {
+    wk.appendChild(h('div', { class: 'muted', style: 'margin:10px 0 8px', text: 'Everything is Rest until you have routines. Start from a template (you can edit it after) or pick "+ new routine" on any day.' }));
+    TEMPLATES.forEach((t) => {
+      wk.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:6px', onclick: () => applyTemplate(t) }, t.name + '  (' + t.blurb + ')'));
+    });
+  }
   wrap.appendChild(wk);
 
   wrap.appendChild(h('h2', null, 'My routines'));
