@@ -54,7 +54,6 @@
   @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 
   .card { background: #0d1117; border: 1px solid #21262d; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
-  .card.pad0 { padding: 0 14px; }
   .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
   .tiles.three { grid-template-columns: repeat(3, 1fr); }
   @media (min-width: 520px) { .tiles.four { grid-template-columns: repeat(4, 1fr); } }
@@ -63,8 +62,10 @@
   .tile span { font-size: 10px; letter-spacing: 0.08em; color: #6e7681; }
   .tile small { display: block; font-size: 10px; color: #484f58; }
 
-  .chip { font-size: 11px; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 3px 12px; margin-bottom: 12px; }
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+  .chip { font-size: 11px; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 3px 12px; }
   .chip:hover { border-color: #39d353; color: #39d353; }
+  .chip.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
   .datepill { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 6px 8px; font-size: 12px; margin-top: 4px; }
   .seg { display: flex; background: #0d1117; border: 1px solid #21262d; border-radius: 9px; padding: 3px; gap: 2px; margin-bottom: 10px; }
   .seg button { flex: 1; font-size: 11px; padding: 6px 4px; border-radius: 6px; color: #8b949e; letter-spacing: 0.04em; }
@@ -74,24 +75,43 @@
 
   .exhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .exname { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.3; }
+  .mtag { font-size: 9px; letter-spacing: 0.08em; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 0 8px; margin-top: 2px; }
+  .mtag:hover { border-color: #39d353; color: #39d353; }
   .prtag { font-size: 10px; color: #e6a817; border: 1px solid rgba(230,168,23,0.35); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
-  .prior { font-size: 11px; color: #6e7681; margin: 2px 0 6px; }
-  .setrow { display: grid; grid-template-columns: 24px 1fr auto 28px; gap: 8px; align-items: center; padding: 7px 0; border-top: 1px solid #161b22; }
+  .prior { font-size: 11px; color: #6e7681; margin: 4px 0 6px; }
+  .hint { background: rgba(88,217,245,0.05); border: 1px solid rgba(88,217,245,0.2); border-radius: 8px; padding: 8px 10px; margin: 6px 0 8px; font-size: 11px; color: #8b949e; line-height: 1.7; }
+  .hint b { color: #58d9f5; font-weight: 500; }
+  .setrow { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #161b22; cursor: pointer; }
+  .setrow:hover .val { color: #39d353; }
   .idx { width: 22px; height: 22px; border-radius: 50%; background: #161b22; color: #8b949e; font-size: 10px; display: flex; align-items: center; justify-content: center; }
-  .setrow .val { font-size: 14px; font-weight: 500; }
+  .setrow .val { font-size: 14px; font-weight: 500; transition: color 0.2s; }
   .setrow .val u { text-decoration: none; color: #6e7681; font-size: 11px; font-weight: 400; margin-left: 4px; }
+  .rpe { color: #e6a817; font-size: 11px; font-weight: 400; margin-left: 6px; }
+  .badge { font-size: 9px; letter-spacing: 0.06em; border-radius: 99px; padding: 0 7px; border: 1px solid; margin-left: 6px; font-weight: 400; }
+  .badge.warm { color: #58d9f5; border-color: rgba(88,217,245,0.4); }
+  .badge.drop { color: #a78bfa; border-color: rgba(167,139,250,0.4); }
+  .badge.fail { color: #f87171; border-color: rgba(248,113,113,0.4); }
   .star { color: #e6a817; margin-left: 4px; }
   .e1 { font-size: 10px; color: #6e7681; }
-  .del { color: #484f58; font-size: 18px; width: 28px; height: 28px; border-radius: 6px; line-height: 1; }
-  .del:hover { color: #f87171; background: #161b22; }
-  .setform { display: grid; grid-template-columns: 1fr 1fr 48px; gap: 8px; margin-top: 10px; align-items: end; }
+  .setform { display: grid; grid-template-columns: 1fr 1fr 1fr 48px; gap: 8px; margin-top: 10px; align-items: end; }
   .fld span { display: block; font-size: 9px; letter-spacing: 0.1em; color: #6e7681; margin-bottom: 3px; }
-  .fld input { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 10px 6px; font-size: 16px; font-weight: 500; text-align: center; outline: none; }
-  .fld input:focus { border-color: #39d353; }
+  .fld input, .fld select { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 10px 4px; font-size: 16px; font-weight: 500; text-align: center; outline: none; }
+  .fld select { text-align-last: center; padding: 10px 2px; font-size: 15px; }
+  .fld input:focus, .fld select:focus { border-color: #39d353; }
   .addbtn { height: 44px; border-radius: 8px; background: #39d353; color: #000; font-size: 22px; font-weight: 700; transition: all 0.2s; }
   .addbtn:hover { background: #4ef570; box-shadow: 0 0 18px rgba(57,211,83,0.3); }
+  .typebar { display: flex; gap: 4px; margin-top: 8px; }
+  .typebar button { flex: 1; font-size: 10px; padding: 5px 0; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
+  .typebar button.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
+  .tools { display: flex; gap: 8px; margin-top: 8px; }
+  .tools button { font-size: 10px; color: #8b949e; border: 1px solid #21262d; border-radius: 6px; padding: 4px 10px; }
+  .tools button:hover { border-color: #39d353; color: #39d353; }
   .addex { width: 100%; padding: 15px; border: 1px dashed #30363d; border-radius: 12px; color: #8b949e; font-size: 12px; letter-spacing: 0.08em; transition: all 0.2s; }
   .addex:hover { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.04); }
+  .banner { border: 1px solid #196127; background: rgba(57,211,83,0.06); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .banner b { font-family: 'Syne', sans-serif; font-size: 15px; display: block; }
+  .banner small { font-size: 10px; color: #6e7681; letter-spacing: 0.05em; }
+  .btn.sm { width: auto; padding: 8px 14px; font-size: 11px; }
 
   .chartbox { position: relative; width: 100%; }
   .minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #161b22; }
@@ -113,16 +133,15 @@
   .lrow .l div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .lrow .r { text-align: right; flex-shrink: 0; font-weight: 500; }
   .lrow small { display: block; font-size: 10px; color: #6e7681; font-weight: 400; }
-
+  .lbname { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+  .lbname em { font-style: normal; font-size: 9px; letter-spacing: 0.08em; color: #39d353; border: 1px solid #196127; border-radius: 99px; padding: 0 6px; }
   .lb { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 10px 8px; border-top: 1px solid #161b22; border-radius: 8px; }
-  .lb:first-child { border-top: none; }
+  .lb:first-of-type { border-top: none; }
   .lb.me { background: rgba(57,211,83,0.06); }
   .rank { width: 24px; height: 24px; border-radius: 50%; background: #161b22; color: #8b949e; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
   .rank.r1 { background: rgba(230,168,23,0.18); color: #e6a817; }
   .rank.r2 { background: rgba(192,200,208,0.15); color: #c0c8d0; }
   .rank.r3 { background: rgba(205,127,50,0.18); color: #cd7f32; }
-  .lbname { display: flex; align-items: center; gap: 8px; font-size: 13px; }
-  .lbname em { font-style: normal; font-size: 9px; letter-spacing: 0.08em; color: #39d353; border: 1px solid #196127; border-radius: 99px; padding: 0 6px; }
   .bar { height: 4px; background: #161b22; border-radius: 99px; margin-top: 6px; overflow: hidden; }
   .bar i { display: block; height: 100%; border-radius: 99px; transition: width 0.5s ease; }
   .lbval { text-align: right; font-weight: 500; font-size: 14px; }
@@ -130,16 +149,56 @@
   .feed { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #161b22; font-size: 12px; }
   .feed:first-child { border-top: none; }
   .feed .t { margin-left: auto; font-size: 10px; color: #484f58; flex-shrink: 0; }
+  .kudos { font-size: 11px; border: 1px solid #30363d; border-radius: 99px; padding: 0 10px; color: #8b949e; flex-shrink: 0; }
+  .kudos.on { border-color: #e6a817; color: #e6a817; }
+  .pill { font-size: 9px; letter-spacing: 0.06em; border-radius: 99px; padding: 0 8px; border: 1px solid; white-space: nowrap; }
+  .pill.gym { color: #39d353; border-color: #196127; background: rgba(57,211,83,0.08); }
+  .pill.slack { color: #f87171; border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.08); }
+  .pill.ok { color: #8b949e; border-color: #30363d; }
+  .pill.off { color: #58d9f5; border-color: rgba(88,217,245,0.3); }
+  .pill.done { color: #39d353; border-color: #196127; }
+  .chal { border-top: 1px solid #161b22; padding-top: 12px; margin-top: 12px; }
+  .chal:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  .chalhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .chalhead b { font-family: 'Syne', sans-serif; font-size: 14px; }
+
+  .whochips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .wchip { display: flex; align-items: center; gap: 6px; font-size: 11px; border: 1px solid #21262d; border-radius: 99px; padding: 3px 10px 3px 4px; color: #8b949e; }
+  .wchip.all { padding: 3px 12px; }
+  .wchip.on { border-color: #39d353; color: #39d353; }
+  .monthnav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; }
+  .monthnav button { width: 36px; height: 36px; border: 1px solid #21262d; border-radius: 8px; color: #8b949e; font-size: 16px; }
+  .monthnav button:hover { border-color: #39d353; color: #39d353; }
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal .wh { text-align: center; font-size: 9px; letter-spacing: 0.08em; color: #6e7681; padding: 2px 0; }
+  .day { aspect-ratio: 1 / 1.05; background: #0d1117; border: 1px solid #161b22; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; font-size: 10px; color: #8b949e; text-align: left; min-width: 0; overflow: hidden; }
+  .day:hover { border-color: #30363d; }
+  .day.out { visibility: hidden; }
+  .day.today { border-color: #39d353; color: #39d353; }
+  .day.fut { color: #6e7681; }
+  .dots { display: flex; flex-wrap: wrap; gap: 2px; width: 100%; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; display: block; border: 1.5px solid transparent; }
+  .dots i.ring { background: transparent; }
+  .dlabel { font-size: 8px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8b949e; width: 100%; }
+  .calkey { display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #6e7681; }
+  .calkey i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; border: 1.5px solid #8b949e; }
+  .calkey i.f { background: #8b949e; }
+  .wk { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .wk select.pick { margin-bottom: 0; }
+  .rcard { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #161b22; cursor: pointer; }
+  .rcard:first-child { border-top: none; }
+  .rcard b { font-family: 'Syne', sans-serif; font-size: 14px; display: block; }
+  .rcard small { font-size: 10px; color: #6e7681; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .xrow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #161b22; }
+  .xrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .xrow button { width: 30px; height: 30px; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
+  .xrow button:hover { border-color: #39d353; color: #39d353; }
+  .plates { font-size: 13px; line-height: 2; margin-top: 8px; }
+  .platechip { display: inline-block; border: 1px solid #39d353; color: #39d353; border-radius: 6px; padding: 0 8px; margin: 2px 4px 2px 0; }
+  .inrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
 
   .formrow { display: grid; grid-template-columns: 1fr 1fr 48px; gap: 8px; align-items: end; }
   .formrow .fld input[type=date] { font-size: 13px; padding: 11px 6px; }
-  .switchrow { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .switchrow p { font-size: 12px; }
-  .switchrow small { display: block; font-size: 10px; color: #6e7681; }
-  .switch { width: 44px; height: 24px; border-radius: 99px; background: #161b22; border: 1px solid #30363d; position: relative; flex-shrink: 0; transition: all 0.2s; }
-  .switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #8b949e; transition: all 0.2s; }
-  .switch.on { background: #196127; border-color: #39d353; }
-  .switch.on::after { left: 22px; background: #39d353; }
   .nudge { font-size: 11px; color: #e6a817; margin-bottom: 10px; }
   .empty { text-align: center; padding: 28px 12px; }
   .empty b { font-family: 'Syne', sans-serif; font-size: 16px; display: block; margin-bottom: 4px; }
@@ -149,8 +208,8 @@
 
   .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(8,12,16,0.96); backdrop-filter: blur(12px); border-top: 1px solid #21262d; padding-bottom: env(safe-area-inset-bottom); }
   .tabs div { display: flex; max-width: 640px; margin: 0 auto; }
-  .tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 0 8px; font-size: 10px; letter-spacing: 0.06em; color: #6e7681; position: relative; transition: color 0.2s; }
-  .tabs button svg { width: 22px; height: 22px; }
+  .tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 0 8px; font-size: 9px; letter-spacing: 0.05em; color: #6e7681; position: relative; transition: color 0.2s; }
+  .tabs button svg { width: 21px; height: 21px; }
   .tabs button.on { color: #39d353; }
   .tabs button.on::before { content: ''; position: absolute; top: 0; left: 28%; right: 28%; height: 2px; background: #39d353; border-radius: 0 0 4px 4px; box-shadow: 0 0 10px rgba(57,211,83,0.6); }
 
@@ -169,10 +228,11 @@
   .toast.pr { border-color: #e6a817; color: #e6a817; box-shadow: 0 0 24px rgba(230,168,23,0.25); }
 
   .sheetbg { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
-  .sheet { width: 100%; max-width: 640px; max-height: 82vh; overflow: auto; background: #0d1117; border: 1px solid #30363d; border-bottom: none; border-radius: 16px 16px 0 0; padding: 16px; animation: up 0.2s ease; }
+  .sheet { width: 100%; max-width: 640px; max-height: 86vh; overflow: auto; background: #0d1117; border: 1px solid #30363d; border-bottom: none; border-radius: 16px 16px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); animation: up 0.2s ease; }
   @keyframes up { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
   .sheethead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-family: 'Syne', sans-serif; font-size: 16px; }
   .sheethead .x { font-size: 22px; color: #8b949e; width: 32px; height: 32px; }
+  .sheet h3 { font-size: 10px; letter-spacing: 0.12em; color: #6e7681; font-weight: 500; margin: 16px 0 8px; }
   .search { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 11px 12px; font-size: 16px; outline: none; margin-bottom: 8px; }
   .search:focus { border-color: #39d353; }
   .prow { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; padding: 11px 6px; border-top: 1px solid #161b22; font-size: 13px; }
@@ -184,6 +244,8 @@
   .btn:hover { background: #4ef570; box-shadow: 0 0 20px rgba(57,211,83,0.25); }
   .btn.ghost { background: transparent; color: #8b949e; border: 1px solid #30363d; }
   .btn.ghost:hover { border-color: #39d353; color: #39d353; box-shadow: none; }
+  .btn.danger:hover { border-color: #f87171; color: #f87171; }
+  .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
   .field { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 12px; font-size: 16px; outline: none; margin-bottom: 8px; }
   .field:focus { border-color: #39d353; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 20px; }
@@ -198,12 +260,12 @@
 <div id="login" class="page hidden">
   <div class="eyebrow">GYM LOG</div>
   <h1>Who's <span class="accent">lifting?</span></h1>
-  <p class="sub">Pick your name or make a new profile. PIN keeps your sets yours.</p>
+  <p class="sub">Pick your name or make a new profile. The PIN keeps your sets yours.</p>
   <div id="members"></div>
   <div class="card">
     <input id="user" class="field" placeholder="username" autocapitalize="none" autocomplete="off">
     <input id="pin" class="field" placeholder="4-digit PIN" inputmode="numeric" maxlength="4" type="password">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+    <div class="btnrow">
       <button id="loginBtn" class="btn">log in</button>
       <button id="createBtn" class="btn ghost">create profile</button>
     </div>
@@ -214,13 +276,14 @@
 <div id="app" class="hidden">
   <header class="top">
     <a href="/" class="logo">AM<span>.net/gym</span></a>
-    <button id="who" class="who" title="Switch user"></button>
+    <button id="who" class="who" title="Account"></button>
   </header>
   <main id="view" class="page"></main>
   <div id="rest" class="rest"></div>
   <nav id="tabs" class="tabs">
     <div>
       <button data-tab="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>LOG</button>
+      <button data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>PLAN</button>
       <button data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>PROGRESS</button>
       <button data-tab="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/></svg>CREW</button>
       <button data-tab="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 10a4 4 0 0 1 8 0"/><path d="M12 10l2-2"/></svg>BODY</button>
@@ -241,7 +304,13 @@ const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $ = (id) => document.getElementById(id);
 const PALETTE = ['#39d353', '#58d9f5', '#e6a817', '#f472b6', '#a78bfa', '#fb923c', '#2dd4bf', '#f87171'];
 const WEEK_GOAL = 3;
-const REST_PRESETS = [0, 45, 60, 90, 120, 180];
+const REST_SECS = 180;
+const LB_PER_KG = 2.2046226218;
+const WD = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const TYPES = [['working', 'working'], ['warmup', 'warmup'], ['drop', 'drop'], ['failure', 'failure']];
+const RPE_OPTS = [6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+const MUSCLES = ['Chest', 'Back', 'Shoulders', 'Biceps', 'Triceps', 'Quads', 'Hamstrings', 'Glutes', 'Calves', 'Core', 'Other'];
+const MUSCLE_COLORS = { Chest: '#39d353', Back: '#58d9f5', Shoulders: '#e6a817', Biceps: '#f472b6', Triceps: '#a78bfa', Quads: '#fb923c', Hamstrings: '#2dd4bf', Glutes: '#f87171', Calves: '#84cc16', Core: '#c084fc', Other: '#8b949e' };
 const LIBRARY = [
   'Bench Press', 'Incline Bench Press', 'Incline Dumbbell Press', 'Dumbbell Bench Press', 'Chest Fly',
   'Overhead Press', 'Lateral Raise', 'Face Pull', 'Triceps Pushdown', 'Skull Crusher', 'Dips',
@@ -250,11 +319,13 @@ const LIBRARY = [
 ];
 
 const state = {
-  me: null, profiles: [], workouts: [], bodyweights: [],
-  mine: [], byUser: {}, prIds: new Set(), myWeights: [],
+  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], overrides: [], kudos: [], challenges: [], muscles: {},
+  mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, ovMap: {},
+  unit: 'lb',
   tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, focusEx: '',
-  crewRange: 'week', crewMetric: 'volume', liftKey: '', progKey: '',
-  restSecs: 90, rest: null, pending: [], loaded: false, error: ''
+  crewRange: 'week', crewMetric: 'volume', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
+  calMonth: '', calWho: 'all',
+  restOn: true, rest: null, pending: [], loaded: false, error: ''
 };
 
 /* tiny helpers */
@@ -286,11 +357,18 @@ function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
 const key = (s) => String(s).trim().toLowerCase();
 const fmt = (n) => Math.round(n).toLocaleString();
 const fmtW = (n) => String(Math.round(Number(n) * 10) / 10);
-const signed = (n) => (n > 0 ? '+' : '') + fmtW(n);
-const vol = (r) => Number(r.weight) * r.reps * r.sets;
-const e1rm = (w, r) => (r <= 1 ? w : w * (1 + r / 30));
+const signed = (n) => (Math.round(Number(n) * 10) / 10 > 0 ? '+' : '') + fmtW(n);
 const byTime = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : 0));
 const byDate = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : (a.created_at < b.created_at ? -1 : 1));
+
+/* units (weights are always stored in lb) */
+
+const toDisp = (lb) => (state.unit === 'kg' ? Number(lb) / LB_PER_KG : Number(lb));
+const fromDisp = (v) => Math.round((state.unit === 'kg' ? Number(v) * LB_PER_KG : Number(v)) * 1000) / 1000;
+const dw = (lb) => fmtW(toDisp(lb));
+const unit = () => state.unit;
+
+/* dates */
 
 function today() {
   const d = new Date();
@@ -301,8 +379,13 @@ function parseD(s) { const p = s.split('-').map(Number); return new Date(p[0], p
 function fmtD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function addDays(s, n) { const d = parseD(s); d.setDate(d.getDate() + n); return fmtD(d); }
 function weekStart(s) { const d = parseD(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return fmtD(d); }
+function weekdayIdx(s) { return (parseD(s).getDay() + 6) % 7; }
 function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / 86400000); }
 function shortDate(s) { return parseD(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+function longDate(s) { return parseD(s).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }); }
+function addMonths(ym, n) { const p = ym.split('-').map(Number); const d = new Date(p[0], p[1] - 1 + n, 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); }
+function monthLabel(ym) { return parseD(ym + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' }); }
+function daysInMonth(ym) { const p = ym.split('-').map(Number); return new Date(p[0], p[1], 0).getDate(); }
 function ago(iso) {
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
   if (s < 60) return 'now';
@@ -310,6 +393,47 @@ function ago(iso) {
   if (s < 86400) return Math.floor(s / 3600) + 'h';
   return Math.floor(s / 86400) + 'd';
 }
+
+/* set math */
+
+const isWarm = (r) => r.set_type === 'warmup';
+const qual = (r) => !isWarm(r) && r.set_type !== 'drop' && r.reps >= 1 && r.reps <= 10 && Number(r.weight) > 0;
+const vol = (r) => (isWarm(r) ? 0 : Number(r.weight) * r.reps * r.sets);
+const setN = (r) => (isWarm(r) ? 0 : r.sets);
+const typeClass = (t) => (t === 'warmup' ? 'warm' : t === 'drop' ? 'drop' : 'fail');
+
+/* Epley estimate. With an RPE, reps left in the tank are added to the reps done. */
+function e1rm(w, r, rpe) {
+  let n = Number(r);
+  if (rpe != null) n += Math.max(0, 10 - Number(rpe));
+  n = Math.min(n, 15);
+  return n <= 1 ? Number(w) : Number(w) * (1 + n / 30);
+}
+
+const COMPOUND_RE = /(squat|bench press|deadlift|overhead press|military press|shoulder press|barbell row|pendlay|hip thrust)/i;
+const isCompound = (name) => COMPOUND_RE.test(name);
+
+const MUSCLE_RULES = [
+  [/hip thrust|glute|bridge/i, 'Glutes'],
+  [/leg curl|hamstring|romanian|rdl|good morning|nordic|stiff/i, 'Hamstrings'],
+  [/calf|calves/i, 'Calves'],
+  [/tricep|pushdown|skull|dips?\b|close.?grip|kickback/i, 'Triceps'],
+  [/bicep|curl|hammer|preacher/i, 'Biceps'],
+  [/squat|leg press|leg extension|lunge|quad|hack|step.?up/i, 'Quads'],
+  [/\bab(s|dominal)?\b|crunch|plank|core|sit.?up|leg raise|russian twist|woodchop|hanging/i, 'Core'],
+  [/bench|chest|fly|flye|pec|push.?up|incline|decline/i, 'Chest'],
+  [/shoulder|overhead|military|lateral raise|front raise|rear delt|face pull|arnold|upright|shrug/i, 'Shoulders'],
+  [/row|pull.?up|chin.?up|pulldown|\blats?\b|deadlift|back|pullover|hyperext/i, 'Back']
+];
+function guessMuscle(name) {
+  for (let i = 0; i < MUSCLE_RULES.length; i += 1) {
+    if (MUSCLE_RULES[i][0].test(name)) return MUSCLE_RULES[i][1];
+  }
+  return 'Other';
+}
+const muscleOf = (name) => state.muscles[key(name)] || guessMuscle(name);
+
+/* avatars, toast, small widgets */
 
 function colorOf(pid) {
   const i = state.profiles.findIndex((p) => p.id === pid);
@@ -394,20 +518,42 @@ async function fetchAll(table, cols, build) {
 }
 
 async function loadAll() {
-  const profiles = await fetchAll('profiles', 'id, username, share_weight, created_at', (q) => q.order('created_at').order('id'));
-  const workouts = await fetchAll('workouts', 'id, profile_id, date, exercise, weight, reps, sets, notes, created_at', (q) => q.order('created_at').order('id'));
-  const ids = profiles.filter((p) => p.share_weight || p.id === state.me.id).map((p) => p.id);
-  const bodyweights = ids.length
-    ? await fetchAll('bodyweights', 'id, profile_id, date, weight, created_at', (q) => q.in('profile_id', ids).order('date').order('id'))
-    : [];
-  state.profiles = profiles;
-  state.workouts = workouts;
-  state.bodyweights = bodyweights;
+  const r = await Promise.all([
+    fetchAll('profiles', 'id, username, unit, at_gym_until, created_at', (q) => q.order('created_at').order('id')),
+    fetchAll('workouts', 'id, profile_id, date, exercise, weight, reps, sets, notes, rpe, set_type, created_at', (q) => q.order('created_at').order('id')),
+    fetchAll('bodyweights', 'id, profile_id, date, weight, created_at', (q) => q.order('date').order('id')),
+    fetchAll('routines', 'id, profile_id, name, exercises, created_at', (q) => q.order('created_at').order('id')),
+    fetchAll('schedule_days', 'profile_id, weekday, routine_id', (q) => q.order('profile_id').order('weekday')),
+    fetchAll('schedule_overrides', 'profile_id, date, routine_id', (q) => q.order('profile_id').order('date')),
+    fetchAll('kudos', 'id, workout_id, from_profile', (q) => q.order('id')),
+    fetchAll('challenges', 'id, creator_id, name, exercise, start_date, end_date, created_at', (q) => q.order('created_at').order('id')),
+    fetchAll('exercise_muscles', 'key, muscle', (q) => q.order('key'))
+  ]);
+  state.profiles = r[0];
+  state.workouts = r[1].map(normSet);
+  state.bodyweights = r[2];
+  state.routines = r[3].map((x) => Object.assign({}, x, { exercises: Array.isArray(x.exercises) ? x.exercises : [] }));
+  state.schedule = r[4];
+  state.overrides = r[5];
+  state.kudos = r[6];
+  state.challenges = r[7];
+  state.muscles = {};
+  r[8].forEach((m) => { state.muscles[m.key] = m.muscle; });
   derive();
+}
+
+function normSet(w) {
+  return Object.assign({}, w, {
+    set_type: w.set_type || 'working',
+    rpe: w.rpe == null ? null : Number(w.rpe),
+    sets: w.sets || 1
+  });
 }
 
 function derive() {
   const me = state.me.id;
+  const mp = state.profiles.find((p) => p.id === me);
+  state.unit = mp && mp.unit === 'kg' ? 'kg' : 'lb';
   state.mine = state.workouts.filter((w) => w.profile_id === me);
   state.byUser = {};
   state.profiles.forEach((p) => { state.byUser[p.id] = []; });
@@ -416,16 +562,27 @@ function derive() {
   for (const pid in state.byUser) {
     const best = {};
     state.byUser[pid].slice().sort(byTime).forEach((r) => {
+      if (isWarm(r)) return;
       const k = key(r.exercise);
       const w = Number(r.weight);
       if (k in best) {
-        if (w > best[k]) { state.prIds.add(r.id); best[k] = w; }
+        if (w > best[k] + 0.0005) { state.prIds.add(r.id); best[k] = w; }
       } else {
         best[k] = w;
       }
     });
   }
   state.myWeights = state.bodyweights.filter((b) => b.profile_id === me).sort(byDate);
+  state.bwLatest = {};
+  state.bodyweights.slice().sort(byDate).forEach((b) => { state.bwLatest[b.profile_id] = b; });
+  state.routineById = {};
+  state.routines.forEach((r) => { state.routineById[r.id] = r; });
+  state.kudosBy = {};
+  state.kudos.forEach((k) => { (state.kudosBy[k.workout_id] = state.kudosBy[k.workout_id] || new Set()).add(k.from_profile); });
+  state.schMap = {};
+  state.schedule.forEach((s) => { state.schMap[s.profile_id + '|' + s.weekday] = s; });
+  state.ovMap = {};
+  state.overrides.forEach((o) => { state.ovMap[o.profile_id + '|' + o.date] = o; });
 }
 
 async function refreshData(force) {
@@ -455,41 +612,155 @@ function myExercises() {
 }
 
 function lastSession(k, before) {
-  const rows = state.mine.filter((r) => key(r.exercise) === k && r.date < before);
+  const rows = state.mine.filter((r) => key(r.exercise) === k && r.date < before && !isWarm(r));
   if (!rows.length) return null;
   const d = rows.reduce((m, r) => (r.date > m ? r.date : m), '');
   return { date: d, rows: rows.filter((r) => r.date === d).sort(byTime) };
 }
+
 function bestWeight(k) {
   let b = null;
-  state.mine.forEach((r) => { if (key(r.exercise) === k) { const w = Number(r.weight); if (b === null || w > b) b = w; } });
+  state.mine.forEach((r) => {
+    if (key(r.exercise) !== k || isWarm(r)) return;
+    const w = Number(r.weight);
+    if (b === null || w > b) b = w;
+  });
   return b;
+}
+
+function topSet(rows) {
+  return rows.reduce((m, r) => {
+    const w = Number(r.weight);
+    const mw = Number(m.weight);
+    return (w > mw + 0.0005 || (Math.abs(w - mw) <= 0.0005 && r.reps > m.reps)) ? r : m;
+  }, rows[0]);
+}
+
+/* best recent estimated 1RM from real working sets of 1 to 10 reps */
+function est1RM(k) {
+  const cutoff = addDays(today(), -90);
+  let best = null;
+  state.mine.forEach((r) => {
+    if (key(r.exercise) !== k || !qual(r) || r.date < cutoff) return;
+    const e = e1rm(Number(r.weight), r.reps, r.rpe);
+    if (!best || e > best.e) best = { e, r };
+  });
+  return best;
+}
+
+/* simple progression: RPE decides between more weight, one more rep, or repeat */
+function suggestion(k, name, before) {
+  const prior = lastSession(k, before);
+  if (!prior) return null;
+  const top = topSet(prior.rows);
+  const comp = isCompound(name);
+  const inc = state.unit === 'kg' ? (comp ? 2.5 : 1) : (comp ? 5 : 2.5);
+  const w = toDisp(top.weight);
+  const rpe = top.rpe;
+  let nw = w;
+  let nr = top.reps;
+  let why;
+  if (rpe != null) {
+    if (rpe <= 8) {
+      nw = w + inc;
+      why = 'last top set was RPE ' + rpe + ', room to add weight';
+    } else if (rpe <= 9.5) {
+      if (top.reps >= 12) { nw = w + inc; nr = 8; why = 'hit 12 reps near the limit, go heavier'; }
+      else { nr = top.reps + 1; why = 'close to the limit, add a rep first'; }
+    } else {
+      why = 'RPE 10 last time, match it before adding';
+    }
+  } else if (top.reps >= 10) {
+    nw = w + inc;
+    nr = 8;
+    why = 'you hit 10+ reps, time to go up';
+  } else {
+    nr = top.reps + 1;
+    why = 'add a rep, then add weight';
+  }
+  return { w: Math.round(nw * 10) / 10, r: nr, why, from: top };
+}
+
+/* plan, schedule, status */
+
+function hasSchedule(pid) { return state.schedule.some((s) => s.profile_id === pid); }
+
+function planFor(pid, date) {
+  const ov = state.ovMap[pid + '|' + date];
+  if (ov) return { routine: ov.routine_id ? (state.routineById[ov.routine_id] || null) : null, source: 'override' };
+  const s = state.schMap[pid + '|' + weekdayIdx(date)];
+  if (s && s.routine_id) return { routine: state.routineById[s.routine_id] || null, source: 'weekly' };
+  return { routine: null, source: s ? 'weekly' : 'none' };
+}
+
+function statusOf(p) {
+  const rows = (state.byUser[p.id] || []).filter((r) => !isWarm(r));
+  const t = today();
+  const atGym = !!(p.at_gym_until && new Date(p.at_gym_until).getTime() > Date.now());
+  if (!rows.length) return { kind: 'new', atGym, slacking: false, idle: 0, lastDate: null, trainedToday: false };
+  let last = '';
+  rows.forEach((r) => { if (r.date > last) last = r.date; });
+  const trainedToday = rows.some((r) => r.date === t);
+  let idle = Math.max(0, daysBetween(last, t) - 1);
+  if (hasSchedule(p.id) && idle > 0) {
+    for (let d = addDays(last, 1); d < t; d = addDays(d, 1)) {
+      if (!planFor(p.id, d).routine) idle -= 1;
+    }
+  }
+  idle = Math.max(0, idle);
+  const slacking = !trainedToday && idle >= 3;
+  return { kind: slacking ? 'slack' : 'ok', atGym, slacking, idle, lastDate: last, trainedToday };
 }
 
 /* actions */
 
-async function logSet(name, w, r) {
-  if (!Number.isFinite(w) || w < 0 || !Number.isFinite(r) || r < 1) { toast('Enter weight and reps', 'err'); return; }
+async function logSet(name, wDisp, reps, rpe, type) {
+  if (!Number.isFinite(wDisp) || wDisp < 0 || !Number.isFinite(reps) || reps < 1) { toast('Enter weight and reps', 'err'); return; }
   const k = key(name);
+  const w = fromDisp(wDisp);
   const prev = bestWeight(k);
   const res = await db.from('workouts').insert({
-    profile_id: state.me.id, exercise: name, weight: w, reps: r, sets: 1, date: state.logDate
+    profile_id: state.me.id, exercise: name, weight: w, reps, sets: 1, date: state.logDate, rpe, set_type: type
   }).select().single();
   if (res.error) { toast(res.error.message, 'err'); return; }
-  state.workouts.push(res.data);
+  state.workouts.push(normSet(res.data));
   derive();
-  state.drafts[k] = { w: String(w), r: String(r) };
-  if (prev !== null && w > prev) toast('NEW PR: ' + name + ' ' + fmtW(w), 'pr');
-  startRest();
+  state.drafts[state.logDate + '|' + k] = { w: String(wDisp), r: String(reps), rpe: rpe == null ? '' : String(rpe), type };
+  if (type !== 'warmup' && prev !== null && w > prev + 0.0005) toast('NEW PR: ' + name + ' ' + fmtW(wDisp) + ' ' + unit(), 'pr');
+  if (type !== 'warmup' && state.restOn) startRest();
   render();
+}
+
+async function editSet(id, patch) {
+  const res = await db.from('workouts').update(patch).eq('id', id).eq('profile_id', state.me.id).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  const i = state.workouts.findIndex((w) => w.id === id);
+  if (i >= 0) state.workouts[i] = normSet(res.data);
+  derive();
+  render();
+  return true;
 }
 
 async function deleteSet(id) {
   const res = await db.from('workouts').delete().eq('id', id).eq('profile_id', state.me.id);
   if (res.error) { toast(res.error.message, 'err'); return; }
   state.workouts = state.workouts.filter((w) => w.id !== id);
+  state.kudos = state.kudos.filter((k) => k.workout_id !== id);
   derive();
   render();
+}
+
+async function logWarmups(name, sets) {
+  const rows = sets.map((s) => ({
+    profile_id: state.me.id, exercise: name, weight: fromDisp(s[0]), reps: s[1], sets: 1, date: state.logDate, rpe: null, set_type: 'warmup'
+  }));
+  const res = await db.from('workouts').insert(rows).select();
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  res.data.forEach((r) => state.workouts.push(normSet(r)));
+  derive();
+  render();
+  toast('Warmups logged');
+  return true;
 }
 
 function addExercise(name) {
@@ -502,8 +773,16 @@ function addExercise(name) {
   render();
 }
 
-async function logWeight(w, date) {
-  if (!Number.isFinite(w) || w <= 0) { toast('Enter a weight', 'err'); return; }
+function loadRoutine(r) {
+  if (state.extraDate !== state.logDate) { state.extraDate = state.logDate; state.extra = []; }
+  r.exercises.forEach((n) => { if (!state.extra.some((x) => key(x) === key(n))) state.extra.push(n); });
+  render();
+  toast(r.name + ' loaded');
+}
+
+async function logWeight(wDisp, date) {
+  if (!Number.isFinite(wDisp) || wDisp <= 0) { toast('Enter a weight', 'err'); return; }
+  const w = fromDisp(wDisp);
   const existing = state.myWeights.find((b) => b.date === date);
   let res;
   if (existing) {
@@ -526,22 +805,119 @@ async function deleteWeight(id) {
   render();
 }
 
-async function toggleShare() {
-  const p = myProfile();
-  const next = !p.share_weight;
-  const res = await db.from('profiles').update({ share_weight: next }).eq('id', state.me.id);
+async function setUnit(u) {
+  const res = await db.from('profiles').update({ unit: u }).eq('id', state.me.id);
   if (res.error) { toast(res.error.message, 'err'); return; }
-  p.share_weight = next;
+  myProfile().unit = u;
+  derive();
   render();
-  toast(next ? 'Sharing weight change with the crew' : 'Weight change hidden from the crew');
 }
 
-/* rest timer */
+async function toggleAtGym() {
+  const p = myProfile();
+  const on = !!(p.at_gym_until && new Date(p.at_gym_until).getTime() > Date.now());
+  const next = on ? null : new Date(Date.now() + 3 * 3600 * 1000).toISOString();
+  const res = await db.from('profiles').update({ at_gym_until: next }).eq('id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  p.at_gym_until = next;
+  render();
+  toast(on ? 'Checked out' : 'Checked in for 3 hours');
+}
+
+async function saveRoutine(d) {
+  const body = { name: d.name.trim(), exercises: d.exercises };
+  let res;
+  if (d.id) res = await db.from('routines').update(body).eq('id', d.id).eq('profile_id', state.me.id).select().single();
+  else res = await db.from('routines').insert(Object.assign({ profile_id: state.me.id }, body)).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  const row = Object.assign({}, res.data, { exercises: Array.isArray(res.data.exercises) ? res.data.exercises : [] });
+  state.routines = state.routines.filter((r) => r.id !== row.id).concat([row]);
+  derive();
+  render();
+  return true;
+}
+
+async function deleteRoutine(id) {
+  const res = await db.from('routines').delete().eq('id', id).eq('profile_id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.routines = state.routines.filter((r) => r.id !== id);
+  state.schedule = state.schedule.map((s) => (s.routine_id === id ? Object.assign({}, s, { routine_id: null }) : s));
+  state.overrides = state.overrides.map((o) => (o.routine_id === id ? Object.assign({}, o, { routine_id: null }) : o));
+  derive();
+  render();
+  return true;
+}
+
+async function setWeekday(wd, routineId) {
+  const row = { profile_id: state.me.id, weekday: wd, routine_id: routineId };
+  const res = await db.from('schedule_days').upsert(row, { onConflict: 'profile_id,weekday' });
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  state.schedule = state.schedule.filter((s) => !(s.profile_id === row.profile_id && s.weekday === wd)).concat([row]);
+  derive();
+  render();
+}
+
+async function setOverride(date, routineId) {
+  const row = { profile_id: state.me.id, date, routine_id: routineId };
+  const res = await db.from('schedule_overrides').upsert(row, { onConflict: 'profile_id,date' });
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  state.overrides = state.overrides.filter((o) => !(o.profile_id === row.profile_id && o.date === date)).concat([row]);
+  derive();
+  render();
+}
+
+async function clearOverride(date) {
+  const res = await db.from('schedule_overrides').delete().eq('profile_id', state.me.id).eq('date', date);
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  state.overrides = state.overrides.filter((o) => !(o.profile_id === state.me.id && o.date === date));
+  derive();
+  render();
+}
+
+async function toggleKudos(wid) {
+  const mine = state.kudos.find((k) => k.workout_id === wid && k.from_profile === state.me.id);
+  if (mine) {
+    const res = await db.from('kudos').delete().eq('id', mine.id);
+    if (res.error) { toast(res.error.message, 'err'); return; }
+    state.kudos = state.kudos.filter((k) => k.id !== mine.id);
+  } else {
+    const res = await db.from('kudos').insert({ workout_id: wid, from_profile: state.me.id }).select().single();
+    if (res.error) { toast(res.error.message, 'err'); return; }
+    state.kudos.push(res.data);
+  }
+  derive();
+  render();
+}
+
+async function createChallenge(c) {
+  const res = await db.from('challenges').insert(Object.assign({ creator_id: state.me.id }, c)).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.challenges.push(res.data);
+  derive();
+  render();
+  return true;
+}
+
+async function deleteChallenge(id) {
+  const res = await db.from('challenges').delete().eq('id', id).eq('creator_id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  state.challenges = state.challenges.filter((c) => c.id !== id);
+  render();
+}
+
+async function setMuscle(name, muscle) {
+  const k = key(name);
+  const res = await db.from('exercise_muscles').upsert({ key: k, muscle }, { onConflict: 'key' });
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  state.muscles[k] = muscle;
+  render();
+}
+
+/* rest timer (fixed 3:00 after every working set) */
 
 let restTimer = null;
 function startRest() {
-  if (!state.restSecs) return;
-  state.rest = { end: Date.now() + state.restSecs * 1000, total: state.restSecs * 1000 };
+  state.rest = { end: Date.now() + REST_SECS * 1000, total: REST_SECS * 1000 };
   const box = $('rest');
   box.replaceChildren(
     h('div', { class: 'restfill', id: 'restfill' }),
@@ -573,11 +949,10 @@ function tickRest() {
   $('resttime').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
   $('restfill').style.width = Math.max(0, Math.min(100, (left / state.rest.total) * 100)) + '%';
 }
-function cycleRest() {
-  const i = REST_PRESETS.indexOf(state.restSecs);
-  state.restSecs = REST_PRESETS[(i + 1) % REST_PRESETS.length];
-  lsSet('gym_rest', String(state.restSecs));
-  if (!state.restSecs) { state.rest = null; stopRestTimer(); }
+function toggleRest() {
+  state.restOn = !state.restOn;
+  lsSet('gym_rest_on', state.restOn ? '1' : '0');
+  if (!state.restOn) { state.rest = null; stopRestTimer(); }
   render();
 }
 
@@ -593,11 +968,27 @@ function closeSheet() {
   $('sheet').classList.add('hidden');
   $('sheet').replaceChildren();
 }
+function sheetHead(title) {
+  return h('div', { class: 'sheethead' }, h('b', { text: title }), h('button', { class: 'x', onclick: closeSheet, text: '×' }));
+}
 
-function openPicker() {
+function liftOptions() {
+  const m = {};
+  state.workouts.forEach((r) => {
+    if (isWarm(r)) return;
+    const k = key(r.exercise);
+    const o = m[k] = m[k] || { k, name: r.exercise, users: new Set(), n: 0 };
+    o.users.add(r.profile_id);
+    o.n += 1;
+  });
+  return Object.values(m).map((o) => ({ k: o.k, name: o.name, users: o.users.size, n: o.n })).sort((a, b) => b.users - a.users || b.n - a.n);
+}
+
+function openPicker(cb) {
+  const onPick = cb || addExercise;
   const search = h('input', { class: 'search', placeholder: 'search or type a new exercise', autocomplete: 'off' });
   const list = h('div');
-  function pick(name) { closeSheet(); addExercise(name); }
+  function pick(name) { closeSheet(); onPick(name); }
   function draw() {
     const q = search.value.trim();
     const qk = key(q);
@@ -605,7 +996,8 @@ function openPicker() {
     const entries = [];
     const seen = new Set();
     myExercises().forEach((m) => { seen.add(m.k); entries.push({ name: m.name, sub: m.n + ' sets logged' }); });
-    LIBRARY.forEach((n) => { if (!seen.has(key(n))) entries.push({ name: n, sub: '' }); });
+    liftOptions().forEach((o) => { if (!seen.has(o.k)) { seen.add(o.k); entries.push({ name: o.name, sub: 'crew' }); } });
+    LIBRARY.forEach((n) => { if (!seen.has(key(n))) { seen.add(key(n)); entries.push({ name: n, sub: '' }); } });
     const shown = entries.filter((e) => !qk || key(e.name).includes(qk));
     if (q && !entries.some((e) => key(e.name) === qk)) {
       list.appendChild(h('button', { class: 'prow new', onclick: () => pick(q), text: '+ add "' + q + '"' }));
@@ -615,27 +1007,373 @@ function openPicker() {
     });
   }
   search.addEventListener('input', draw);
-  openSheet([
-    h('div', { class: 'sheethead' }, h('b', { text: 'Add exercise' }), h('button', { class: 'x', onclick: closeSheet, text: '×' })),
-    search,
-    list
-  ]);
+  openSheet([sheetHead('Add exercise'), search, list]);
   draw();
   setTimeout(() => search.focus(), 60);
 }
 
-/* views */
+function openMuscle(name) {
+  const cur = muscleOf(name);
+  openSheet([
+    sheetHead('Muscle group'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: name + '. The whole crew shares this setting.' }),
+    h('div', { class: 'chiprow' }, MUSCLES.map((m) => h('button', {
+      class: 'chip' + (m === cur ? ' on' : ''),
+      onclick: () => { closeSheet(); setMuscle(name, m); },
+      text: m
+    })))
+  ]);
+}
+
+/* plate calculator */
+
+function plateMath(target, bar, plates) {
+  const per = (target - bar) / 2;
+  if (per < 0) return { under: true };
+  let left = per;
+  const out = [];
+  plates.forEach((p) => {
+    const n = Math.floor((left + 1e-9) / p);
+    if (n > 0) { out.push([p, n]); left -= n * p; }
+  });
+  return { out, short: left > 0.01 ? left : 0, per };
+}
+
+function openPlates(startW) {
+  const kg = state.unit === 'kg';
+  const bars = kg ? [20, 15] : [45, 35];
+  const plates = kg ? [25, 20, 15, 10, 5, 2.5, 1.25] : [45, 35, 25, 10, 5, 2.5];
+  let bar = bars[0];
+  const wIn = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', placeholder: 'target weight (' + unit() + ')', value: startW > 0 ? fmtW(startW) : '' });
+  const out = h('div', { class: 'plates' });
+  const barRow = h('div', { class: 'chiprow' });
+  function drawBars() {
+    barRow.replaceChildren(h('span', { class: 'muted', text: 'bar:' }));
+    bars.forEach((b) => barRow.appendChild(h('button', {
+      class: 'chip' + (b === bar ? ' on' : ''),
+      onclick: () => { bar = b; drawBars(); draw(); },
+      text: b + ' ' + unit()
+    })));
+  }
+  function draw() {
+    const target = parseFloat(wIn.value);
+    out.replaceChildren();
+    if (!Number.isFinite(target)) { out.appendChild(h('div', { class: 'muted', text: 'Enter a target weight.' })); return; }
+    const res = plateMath(target, bar, plates);
+    if (res.under) { out.appendChild(h('div', { class: 'muted', text: 'That is under the empty bar (' + bar + ' ' + unit() + ').' })); return; }
+    if (!res.out.length) { out.appendChild(h('div', { text: 'Just the bar.' })); return; }
+    out.appendChild(h('div', { class: 'muted', text: 'Per side:' }));
+    const row = h('div');
+    res.out.forEach((p) => row.appendChild(h('span', { class: 'platechip', text: p[0] + ' × ' + p[1] })));
+    out.appendChild(row);
+    if (res.short) out.appendChild(h('div', { class: 'muted', text: 'Short by ' + fmtW(res.short * 2) + ' ' + unit() + ' total with these plates.' }));
+  }
+  wIn.addEventListener('input', draw);
+  openSheet([sheetHead('Plate calculator'), wIn, barRow, out]);
+  drawBars();
+  draw();
+}
+
+/* warmup sets */
+
+function warmupPlan(work) {
+  const bar = state.unit === 'kg' ? 20 : 45;
+  const step = state.unit === 'kg' ? 2.5 : 5;
+  if (!(work > bar * 1.25)) return [];
+  const round = (x) => Math.max(bar, Math.round(x / step) * step);
+  const raw = [[bar, 10], [round(work * 0.4), 8], [round(work * 0.6), 5], [round(work * 0.8), 3]];
+  const out = [];
+  raw.forEach((s) => { if (s[0] < work && !out.some((o) => o[0] === s[0])) out.push(s); });
+  return out;
+}
+
+function openWarmup(name, work) {
+  const wIn = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', placeholder: 'working weight (' + unit() + ')', value: work > 0 ? fmtW(work) : '' });
+  const out = h('div');
+  const go = h('button', { class: 'btn', text: 'log these as warmup sets' });
+  let plan = [];
+  function draw() {
+    plan = warmupPlan(parseFloat(wIn.value));
+    out.replaceChildren();
+    go.classList.toggle('hidden', !plan.length);
+    if (!plan.length) { out.appendChild(h('div', { class: 'muted', text: 'Enter a working weight above the empty bar.' })); return; }
+    plan.forEach((s, i) => out.appendChild(h('div', { class: 'lrow' },
+      h('div', { class: 'l', text: 'Set ' + (i + 1) }),
+      h('div', { class: 'r', text: fmtW(s[0]) + ' × ' + s[1] })
+    )));
+  }
+  go.addEventListener('click', async () => { if (await logWarmups(name, plan)) closeSheet(); });
+  wIn.addEventListener('input', draw);
+  openSheet([sheetHead('Warmup: ' + name), wIn, out, go]);
+  draw();
+}
+
+/* edit a set */
+
+function openEditSet(r) {
+  let type = r.set_type;
+  const wIn = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', value: dw(r.weight) });
+  const rIn = h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', value: String(r.reps) });
+  const sIn = r.sets > 1 ? h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', value: String(r.sets) }) : null;
+  const rpeSel = h('select', { class: 'pick' },
+    h('option', { value: '', text: 'RPE (none)' }),
+    RPE_OPTS.map((v) => h('option', { value: String(v), selected: r.rpe != null && Number(r.rpe) === v, text: 'RPE ' + v }))
+  );
+  const nIn = h('input', { class: 'field', placeholder: 'note (optional)', value: r.notes || '' });
+  const typeBar = h('div', { class: 'typebar', style: 'margin-bottom:12px' });
+  TYPES.forEach((t) => {
+    const b = h('button', {
+      class: t[0] === type ? 'on' : '',
+      onclick: () => { type = t[0]; Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b)); },
+      text: t[1]
+    });
+    typeBar.appendChild(b);
+  });
+  const save = h('button', { class: 'btn', text: 'save' });
+  save.addEventListener('click', async () => {
+    const w = parseFloat(wIn.value);
+    const reps = parseInt(rIn.value, 10);
+    if (!Number.isFinite(w) || w < 0 || !Number.isFinite(reps) || reps < 1) { toast('Enter weight and reps', 'err'); return; }
+    const patch = {
+      weight: fromDisp(w), reps, rpe: rpeSel.value === '' ? null : parseFloat(rpeSel.value),
+      set_type: type, notes: nIn.value.trim() || null
+    };
+    if (sIn) patch.sets = Math.max(1, parseInt(sIn.value, 10) || 1);
+    if (await editSet(r.id, patch)) closeSheet();
+  });
+  const del = h('button', { class: 'btn ghost danger', text: 'delete set' });
+  let armed = false;
+  del.addEventListener('click', () => {
+    if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+    closeSheet();
+    deleteSet(r.id);
+  });
+  openSheet([
+    sheetHead(r.exercise),
+    h('h3', { text: 'WEIGHT (' + unit().toUpperCase() + ') AND REPS' }),
+    h('div', { class: 'inrow' }, wIn, rIn),
+    sIn ? [h('h3', { text: 'SETS (OLD ENTRY)' }), sIn] : null,
+    h('h3', { text: 'EFFORT AND TYPE' }),
+    rpeSel,
+    typeBar,
+    nIn,
+    h('div', { class: 'btnrow' }, save, del)
+  ]);
+}
+
+/* routines */
+
+function openRoutineEditor(d) {
+  d = d || { id: null, name: '', exercises: [] };
+  const nameIn = h('input', { class: 'field', placeholder: 'routine name (e.g. Push day)', value: d.name });
+  nameIn.addEventListener('input', () => { d.name = nameIn.value; });
+  const list = h('div');
+  function drawList() {
+    list.replaceChildren();
+    if (!d.exercises.length) list.appendChild(h('div', { class: 'muted', text: 'No exercises yet.' }));
+    d.exercises.forEach((n, i) => {
+      list.appendChild(h('div', { class: 'xrow' },
+        h('span', { text: n }),
+        h('button', { title: 'Move up', onclick: () => { if (i > 0) { const t = d.exercises[i - 1]; d.exercises[i - 1] = d.exercises[i]; d.exercises[i] = t; drawList(); } }, text: '↑' }),
+        h('button', { title: 'Move down', onclick: () => { if (i < d.exercises.length - 1) { const t = d.exercises[i + 1]; d.exercises[i + 1] = d.exercises[i]; d.exercises[i] = t; drawList(); } }, text: '↓' }),
+        h('button', { title: 'Remove', onclick: () => { d.exercises.splice(i, 1); drawList(); }, text: '×' })
+      ));
+    });
+  }
+  const add = h('button', {
+    class: 'btn ghost',
+    style: 'margin-top:8px',
+    text: '+ add exercise',
+    onclick: () => openPicker((name) => {
+      if (!d.exercises.some((x) => key(x) === key(name))) d.exercises.push(name);
+      openRoutineEditor(d);
+    })
+  });
+  const save = h('button', { class: 'btn', text: 'save routine' });
+  save.addEventListener('click', async () => {
+    if (!d.name.trim()) { toast('Name the routine', 'err'); return; }
+    if (!d.exercises.length) { toast('Add at least one exercise', 'err'); return; }
+    if (await saveRoutine(d)) closeSheet();
+  });
+  const btns = [save];
+  if (d.id) {
+    const del = h('button', { class: 'btn ghost danger', text: 'delete' });
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+      if (await deleteRoutine(d.id)) closeSheet();
+    });
+    btns.push(del);
+  }
+  openSheet([
+    sheetHead(d.id ? 'Edit routine' : 'New routine'),
+    nameIn,
+    h('h3', { text: 'EXERCISES, IN ORDER' }),
+    list,
+    add,
+    h('div', { class: btns.length > 1 ? 'btnrow' : '', style: btns.length > 1 ? '' : 'margin-top:8px' }, btns)
+  ]);
+  drawList();
+}
+
+/* a day on the calendar */
+
+function openDaySheet(date) {
+  const body = h('div');
+  const t = today();
+  state.profiles.forEach((p) => {
+    const mine = p.id === state.me.id;
+    const plan = planFor(p.id, date);
+    const rows = (state.byUser[p.id] || []).filter((r) => r.date === date && !isWarm(r));
+    const groups = [];
+    rows.slice().sort(byTime).forEach((r) => {
+      const g = groups.find((x) => key(x.name) === key(r.exercise));
+      if (g) g.n += r.sets;
+      else groups.push({ name: r.exercise, n: r.sets });
+    });
+    const planned = plan.routine ? plan.routine.name : (plan.source === 'none' ? 'no plan' : 'rest');
+    const block = h('div', { class: 'card' },
+      h('div', { class: 'lrow' },
+        h('div', { class: 'l lbname' }, avatar(p, 22), p.username, mine ? h('em', { text: 'YOU' }) : null),
+        h('div', { class: 'r' }, h('span', { class: 'pill ' + (plan.routine ? 'ok' : 'rest'), text: planned.toUpperCase() }))
+      ),
+      groups.length
+        ? groups.map((g) => h('div', { class: 'lrow' }, h('div', { class: 'l', text: g.name }), h('div', { class: 'r muted', text: g.n + (g.n === 1 ? ' set' : ' sets') })))
+        : h('div', { class: 'muted', style: 'padding:6px 0 0', text: date > t ? 'upcoming' : 'nothing logged' })
+    );
+    if (mine) {
+      const cur = plan.source === 'override' ? (plan.routine ? plan.routine.id : 'rest') : 'default';
+      const sel = h('select', { class: 'pick', style: 'margin-top:10px' },
+        h('option', { value: 'default', selected: cur === 'default', text: 'Use my weekly plan' }),
+        h('option', { value: 'rest', selected: cur === 'rest', text: 'Rest this day' }),
+        state.routines.filter((r) => r.profile_id === state.me.id).map((r) => h('option', { value: r.id, selected: cur === r.id, text: 'Train: ' + r.name }))
+      );
+      sel.addEventListener('change', async () => {
+        if (sel.value === 'default') await clearOverride(date);
+        else if (sel.value === 'rest') await setOverride(date, null);
+        else await setOverride(date, sel.value);
+        openDaySheet(date);
+      });
+      block.appendChild(sel);
+      block.appendChild(h('button', {
+        class: 'btn ghost',
+        text: 'open this day in Log',
+        onclick: () => { state.logDate = date; closeSheet(); setTab('log'); }
+      }));
+    }
+    body.appendChild(block);
+  });
+  openSheet([sheetHead(longDate(date)), body]);
+}
+
+/* lift race */
+
+function openChallengeSheet() {
+  const opts = liftOptions();
+  const dl = h('datalist', { id: 'chalList' }, opts.map((o) => h('option', { value: o.name })));
+  const exIn = h('input', { class: 'field', list: 'chalList', placeholder: 'lift (e.g. Bench Press)', autocomplete: 'off' });
+  const nameIn = h('input', { class: 'field', placeholder: 'name (optional)' });
+  const sIn = h('input', { class: 'field', type: 'date', value: today() });
+  const eIn = h('input', { class: 'field', type: 'date', value: addDays(today(), 30) });
+  const go = h('button', { class: 'btn', text: 'start race' });
+  go.addEventListener('click', async () => {
+    const ex = exIn.value.trim();
+    if (!ex) { toast('Pick a lift', 'err'); return; }
+    if (!sIn.value || !eIn.value || eIn.value < sIn.value) { toast('Check the dates', 'err'); return; }
+    const c = { name: nameIn.value.trim() || ex + ' race', exercise: ex, start_date: sIn.value, end_date: eIn.value };
+    if (await createChallenge(c)) closeSheet();
+  });
+  openSheet([
+    sheetHead('New lift race'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Best estimated 1RM on this lift during the dates wins. Warmups and drop sets do not count.' }),
+    dl, exIn, nameIn,
+    h('h3', { text: 'START AND END' }),
+    h('div', { class: 'inrow' }, sIn, eIn),
+    go
+  ]);
+}
+
+/* account, export */
+
+function csvCell(v) {
+  const s = v == null ? '' : String(v);
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function downloadText(name, text) {
+  const blob = new Blob([text], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function exportWorkouts() {
+  const head = ['date', 'exercise', 'weight_' + unit(), 'reps', 'sets', 'rpe', 'type', 'notes'];
+  const lines = [head.join(',')];
+  state.mine.slice().sort(byTime).forEach((r) => {
+    lines.push([r.date, r.exercise, dw(r.weight), r.reps, r.sets, r.rpe, r.set_type, r.notes].map(csvCell).join(','));
+  });
+  downloadText('workouts_' + state.me.username + '.csv', lines.join('\n') + '\n');
+}
+function exportWeights() {
+  const lines = ['date,weight_' + unit()];
+  state.myWeights.forEach((b) => { lines.push([b.date, dw(b.weight)].map(csvCell).join(',')); });
+  downloadText('bodyweight_' + state.me.username + '.csv', lines.join('\n') + '\n');
+}
+
+function openAccount() {
+  openSheet([
+    sheetHead(state.me.username),
+    h('h3', { text: 'UNITS' }),
+    seg([['lb', 'pounds'], ['kg', 'kilograms']], state.unit, async (u) => { closeSheet(); await setUnit(u); }),
+    h('h3', { text: 'EXPORT' }),
+    h('div', { class: 'btnrow' },
+      h('button', { class: 'btn ghost', onclick: exportWorkouts, text: 'workouts CSV' }),
+      h('button', { class: 'btn ghost', onclick: exportWeights, text: 'bodyweight CSV' })
+    ),
+    h('h3', { text: 'ACCOUNT' }),
+    h('button', { class: 'btn ghost', onclick: () => { closeSheet(); logout(); }, text: 'switch user' })
+  ]);
+}
+
+/* LOG tab */
 
 function exCard(name, k, rows) {
-  const prior = lastSession(k, state.logDate);
+  const dk = state.logDate + '|' + k;
   const best = bestWeight(k);
+  const prior = lastSession(k, state.logDate);
+  const comp = isCompound(name);
+  const sug = suggestion(k, name, state.logDate);
   const card = h('div', { class: 'card' });
+
   card.appendChild(h('div', { class: 'exhead' },
-    h('div', { class: 'exname', text: name }),
-    best !== null ? h('span', { class: 'prtag', text: 'PR ' + fmtW(best) }) : null
+    h('div', null,
+      h('div', { class: 'exname', text: name }),
+      h('button', { class: 'mtag', onclick: () => openMuscle(name), text: muscleOf(name).toUpperCase() })
+    ),
+    best !== null ? h('span', { class: 'prtag', text: 'PR ' + dw(best) }) : null
   ));
+
+  const est = comp ? est1RM(k) : null;
+  if (est || sug) {
+    const box = h('div', { class: 'hint' });
+    if (est) {
+      box.appendChild(h('div', null,
+        'Est. 1RM ',
+        h('b', { text: fmt(toDisp(est.e)) + ' ' + unit() }),
+        ' from ' + dw(est.r.weight) + ' × ' + est.r.reps + (est.r.rpe != null ? ' @' + est.r.rpe : '')
+      ));
+    }
+    if (sug) {
+      box.appendChild(h('div', null, 'Try next: ', h('b', { text: fmtW(sug.w) + ' × ' + sug.r }), ' (' + sug.why + ')'));
+    }
+    card.appendChild(box);
+  }
   if (prior) {
-    const bits = prior.rows.slice(0, 4).map((r) => fmtW(r.weight) + '×' + r.reps + (r.sets > 1 ? '(' + r.sets + ')' : ''));
+    const bits = prior.rows.slice(0, 4).map((r) => dw(r.weight) + '×' + r.reps + (r.rpe != null ? '@' + r.rpe : '') + (r.sets > 1 ? '(' + r.sets + ')' : ''));
     const more = prior.rows.length > 4 ? ' +' + (prior.rows.length - 4) : '';
     card.appendChild(h('div', { class: 'prior', text: 'Last ' + shortDate(prior.date) + ': ' + bits.join(' · ') + more }));
   } else {
@@ -644,37 +1382,61 @@ function exCard(name, k, rows) {
 
   rows.forEach((r, i) => {
     const w = Number(r.weight);
-    card.appendChild(h('div', { class: 'setrow' },
+    card.appendChild(h('div', { class: 'setrow', onclick: () => openEditSet(r) },
       h('span', { class: 'idx', text: String(i + 1) }),
       h('span', { class: 'val' },
-        fmtW(w) + ' × ' + r.reps,
+        dw(w) + ' × ' + r.reps,
         r.sets > 1 ? h('u', { text: r.sets + ' sets' }) : null,
+        r.rpe != null ? h('span', { class: 'rpe', text: '@' + r.rpe }) : null,
+        r.set_type !== 'working' ? h('span', { class: 'badge ' + typeClass(r.set_type), text: r.set_type }) : null,
         state.prIds.has(r.id) ? h('span', { class: 'star', text: '★' }) : null
       ),
-      h('span', { class: 'e1', text: w > 0 ? 'e1RM ' + fmt(e1rm(w, r.reps)) : '' }),
-      h('button', { class: 'del', title: 'Delete set', onclick: () => deleteSet(r.id), text: '×' })
+      h('span', { class: 'e1', text: qual(r) ? 'e1RM ' + fmt(toDisp(e1rm(w, r.reps, r.rpe))) : '' })
     ));
   });
 
-  const draft = state.drafts[k];
-  let def = { w: '', r: '' };
-  if (draft) def = draft;
-  else if (rows.length) { const l = rows[rows.length - 1]; def = { w: String(l.weight), r: String(l.reps) }; }
-  else if (prior) {
-    const top = prior.rows.reduce((m, r) => (Number(r.weight) > Number(m.weight) ? r : m), prior.rows[0]);
-    def = { w: String(top.weight), r: String(top.reps) };
-  }
+  let def;
+  if (state.drafts[dk]) def = state.drafts[dk];
+  else if (rows.length) {
+    const l = rows[rows.length - 1];
+    def = { w: dw(l.weight), r: String(l.reps), rpe: l.rpe != null ? String(l.rpe) : '', type: l.set_type };
+  } else if (sug) def = { w: fmtW(sug.w), r: String(sug.r), rpe: '', type: 'working' };
+  else def = { w: '', r: '', rpe: '', type: 'working' };
+  let type = def.type || 'working';
+
   const wIn = h('input', { type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: '0', value: def.w, 'data-wk': k });
   const rIn = h('input', { type: 'number', inputmode: 'numeric', min: '1', placeholder: '0', value: def.r });
-  const saveDraft = () => { state.drafts[k] = { w: wIn.value, r: rIn.value }; };
-  const go = () => logSet(name, parseFloat(wIn.value), parseInt(rIn.value, 10));
+  const rpeSel = h('select', null,
+    h('option', { value: '', text: '-' }),
+    RPE_OPTS.map((v) => h('option', { value: String(v), selected: String(v) === String(def.rpe), text: String(v) }))
+  );
+  const saveDraft = () => { state.drafts[dk] = { w: wIn.value, r: rIn.value, rpe: rpeSel.value, type }; };
+  const go = () => logSet(name, parseFloat(wIn.value), parseInt(rIn.value, 10), rpeSel.value === '' ? null : parseFloat(rpeSel.value), type);
   wIn.addEventListener('input', saveDraft);
   rIn.addEventListener('input', saveDraft);
+  rpeSel.addEventListener('change', saveDraft);
   rIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
+
   card.appendChild(h('div', { class: 'setform' },
-    h('label', { class: 'fld' }, h('span', { text: 'LBS' }), wIn),
+    h('label', { class: 'fld' }, h('span', { text: unit().toUpperCase() }), wIn),
     h('label', { class: 'fld' }, h('span', { text: 'REPS' }), rIn),
+    h('label', { class: 'fld' }, h('span', { text: 'RPE' }), rpeSel),
     h('button', { class: 'addbtn', onclick: go, title: 'Log set', text: '+' })
+  ));
+
+  const typeBar = h('div', { class: 'typebar' });
+  TYPES.forEach((t) => {
+    const b = h('button', {
+      class: t[0] === type ? 'on' : '',
+      onclick: () => { type = t[0]; Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b)); saveDraft(); },
+      text: t[1]
+    });
+    typeBar.appendChild(b);
+  });
+  card.appendChild(typeBar);
+  card.appendChild(h('div', { class: 'tools' },
+    h('button', { onclick: () => openPlates(parseFloat(wIn.value) || 0), text: 'plates' }),
+    h('button', { onclick: () => openWarmup(name, parseFloat(wIn.value) || (sug ? sug.w : 0)), text: 'warmup sets' })
   ));
   return card;
 }
@@ -693,9 +1455,12 @@ function renderLog() {
       if (!order.some((o) => o.k === k)) order.push({ k, name: n });
     });
   }
-  const sets = rows.reduce((s, r) => s + r.sets, 0);
-  const volume = rows.reduce((s, r) => s + vol(r), 0);
+  const work = rows.filter((r) => !isWarm(r));
+  const sets = work.reduce((s, r) => s + r.sets, 0);
+  const volume = work.reduce((s, r) => s + vol(r), 0);
   const isToday = date === today();
+  const myRoutines = state.routines.filter((r) => r.profile_id === state.me.id);
+  const plan = planFor(state.me.id, date);
 
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'LOG' }));
@@ -706,19 +1471,125 @@ function renderLog() {
       onchange: (e) => { if (e.target.value) { state.logDate = e.target.value; render(); } }
     })
   ));
-  wrap.appendChild(h('button', { class: 'chip', onclick: cycleRest, text: state.restSecs ? 'rest timer: ' + state.restSecs + 's' : 'rest timer: off' }));
+  wrap.appendChild(h('div', { class: 'chiprow' },
+    h('button', { class: 'chip' + (state.restOn ? ' on' : ''), onclick: toggleRest, text: state.restOn ? 'rest timer 3:00' : 'rest timer off' }),
+    h('button', { class: 'chip', onclick: () => openPlates(0), text: 'plate calculator' })
+  ));
+
+  if (plan.routine) {
+    wrap.appendChild(h('div', { class: 'banner' },
+      h('div', null, h('small', { text: isToday ? 'PLANNED FOR TODAY' : 'PLANNED FOR THIS DAY' }), h('b', { text: plan.routine.name })),
+      h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'load' })
+    ));
+  } else if (!order.length && myRoutines.length) {
+    wrap.appendChild(h('div', { class: 'chiprow' },
+      h('span', { class: 'muted', text: 'start from:' }),
+      myRoutines.map((r) => h('button', { class: 'chip', onclick: () => loadRoutine(r), text: r.name }))
+    ));
+  }
+
   wrap.appendChild(h('div', { class: 'tiles three' },
-    h('div', { class: 'tile' }, h('b', { text: String(sets) }), h('span', { text: 'SETS' })),
-    h('div', { class: 'tile' }, h('b', { text: fmt(volume) }), h('span', { text: 'VOLUME LB' })),
+    h('div', { class: 'tile' }, h('b', { text: String(sets) }), h('span', { text: 'WORKING SETS' })),
+    h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
     h('div', { class: 'tile' }, h('b', { text: String(order.length) }), h('span', { text: 'EXERCISES' }))
   ));
   if (!order.length) {
-    wrap.appendChild(emptyCard('Empty session', 'Add an exercise, enter weight and reps, hit +. The rest timer starts on its own.'));
+    wrap.appendChild(emptyCard('Empty session', 'Add an exercise, enter weight, reps and RPE, hit +. The 3:00 rest timer starts on its own.'));
   }
   order.forEach((o) => wrap.appendChild(exCard(o.name, o.k, rows.filter((r) => key(r.exercise) === o.k))));
-  wrap.appendChild(h('button', { class: 'addex', onclick: openPicker, text: '+ ADD EXERCISE' }));
+  wrap.appendChild(h('button', { class: 'addex', onclick: () => openPicker(), text: '+ ADD EXERCISE' }));
   return wrap;
 }
+
+/* PLAN tab */
+
+function renderPlan() {
+  const wrap = h('div', { class: 'fade' });
+  wrap.appendChild(h('div', { class: 'eyebrow', text: 'PLAN' }));
+  wrap.appendChild(h('h1', null, 'Training ', h('span', { class: 'accent', text: 'calendar' })));
+  if (!state.calMonth) state.calMonth = today().slice(0, 7);
+  const ym = state.calMonth;
+  const t = today();
+  const single = state.calWho !== 'all' && state.profiles.some((p) => p.id === state.calWho) ? state.calWho : 'all';
+
+  const chips = h('div', { class: 'whochips' });
+  chips.appendChild(h('button', { class: 'wchip all' + (single === 'all' ? ' on' : ''), onclick: () => { state.calWho = 'all'; render(); }, text: 'Everyone' }));
+  state.profiles.forEach((p) => {
+    chips.appendChild(h('button', { class: 'wchip' + (single === p.id ? ' on' : ''), onclick: () => { state.calWho = p.id; render(); } }, avatar(p, 18), p.username));
+  });
+  wrap.appendChild(chips);
+
+  wrap.appendChild(h('div', { class: 'monthnav' },
+    h('button', { onclick: () => { state.calMonth = addMonths(ym, -1); render(); }, text: '‹' }),
+    h('span', { text: monthLabel(ym) }),
+    h('button', { onclick: () => { state.calMonth = addMonths(ym, 1); render(); }, text: '›' })
+  ));
+
+  const done = {};
+  state.profiles.forEach((p) => {
+    done[p.id] = new Set((state.byUser[p.id] || []).filter((r) => !isWarm(r)).map((r) => r.date));
+  });
+
+  const cal = h('div', { class: 'cal' });
+  WD.forEach((d) => cal.appendChild(h('div', { class: 'wh', text: d.toUpperCase() })));
+  const lead = weekdayIdx(ym + '-01');
+  for (let i = 0; i < lead; i += 1) cal.appendChild(h('div', { class: 'day out' }));
+  const n = daysInMonth(ym);
+  for (let d = 1; d <= n; d += 1) {
+    const date = ym + '-' + String(d).padStart(2, '0');
+    const dots = h('div', { class: 'dots' });
+    let label = null;
+    const scope = single === 'all' ? state.profiles : state.profiles.filter((p) => p.id === single);
+    scope.forEach((p) => {
+      const c = colorOf(p.id);
+      const plan = planFor(p.id, date);
+      if (done[p.id].has(date)) dots.appendChild(h('i', { style: 'background:' + c + ';border-color:' + c }));
+      else if (plan.routine) dots.appendChild(h('i', { class: 'ring', style: 'border-color:' + c }));
+      if (single !== 'all' && plan.routine) label = h('div', { class: 'dlabel', text: plan.routine.name });
+    });
+    cal.appendChild(h('button', {
+      class: 'day' + (date === t ? ' today' : '') + (date > t ? ' fut' : ''),
+      onclick: () => openDaySheet(date)
+    }, h('span', { text: String(d) }), label, dots));
+  }
+  wrap.appendChild(cal);
+  wrap.appendChild(h('div', { class: 'calkey' },
+    h('span', null, h('i', { class: 'f' }), 'trained'),
+    h('span', null, h('i'), 'planned, not done'),
+    h('span', { text: 'tap a day for details' })
+  ));
+
+  const mine = state.routines.filter((r) => r.profile_id === state.me.id);
+  wrap.appendChild(h('h2', null, 'My weekly plan', h('small', { text: 'REPEATS EVERY WEEK' })));
+  const wk = h('div', { class: 'card' });
+  WD.forEach((label, wd) => {
+    const cur = state.schMap[state.me.id + '|' + wd];
+    const curId = cur && cur.routine_id ? cur.routine_id : 'rest';
+    const sel = h('select', { class: 'pick' },
+      h('option', { value: 'rest', selected: curId === 'rest', text: 'Rest' }),
+      mine.map((r) => h('option', { value: r.id, selected: curId === r.id, text: r.name }))
+    );
+    sel.addEventListener('change', () => setWeekday(wd, sel.value === 'rest' ? null : sel.value));
+    wk.appendChild(h('div', { class: 'wk' }, h('span', { class: 'muted', text: label.toUpperCase() }), sel));
+  });
+  if (!mine.length) wk.appendChild(h('div', { class: 'muted', style: 'margin-top:8px', text: 'Make a routine below, then assign it to days.' }));
+  wrap.appendChild(wk);
+
+  wrap.appendChild(h('h2', null, 'My routines'));
+  const rc = h('div', { class: 'card' });
+  if (!mine.length) rc.appendChild(h('div', { class: 'muted', text: 'No routines yet. A routine is a saved list of exercises, like Push day.' }));
+  mine.forEach((r) => {
+    rc.appendChild(h('div', { class: 'rcard', onclick: () => openRoutineEditor({ id: r.id, name: r.name, exercises: r.exercises.slice() }) },
+      h('div', null, h('b', { text: r.name }), h('small', { text: r.exercises.join(' · ') })),
+      h('span', { class: 'muted', text: 'edit' })
+    ));
+  });
+  rc.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:10px', onclick: () => openRoutineEditor(), text: '+ new routine' }));
+  wrap.appendChild(rc);
+  return wrap;
+}
+
+/* PROGRESS tab */
 
 function weekStreak(rows) {
   const days = {};
@@ -741,7 +1612,7 @@ function weeklyVolume(rows, weeks) {
   const m = {};
   weeks.forEach((w) => { m[w] = 0; });
   rows.forEach((r) => { const w = weekStart(r.date); if (w in m) m[w] += vol(r); });
-  return weeks.map((w) => Math.round(m[w]));
+  return weeks.map((w) => Math.round(toDisp(m[w])));
 }
 
 function heatmap(rows) {
@@ -763,61 +1634,87 @@ function heatmap(rows) {
 }
 
 function renderProgress() {
-  const rows = state.mine;
+  const work = state.mine.filter((r) => !isWarm(r));
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'PROGRESS' }));
   wrap.appendChild(h('h1', null, 'Your ', h('span', { class: 'accent', text: 'numbers' })));
-  if (!rows.length) {
-    wrap.appendChild(emptyCard('Nothing yet', 'Log a few sets and your charts show up here.'));
+  if (!work.length) {
+    wrap.appendChild(emptyCard('Nothing yet', 'Log a few working sets and your charts show up here.'));
     return wrap;
   }
 
   const ws = weekStart(today());
-  const thisWeek = rows.filter((r) => r.date >= ws);
+  const thisWeek = work.filter((r) => r.date >= ws);
   const weekDays = new Set(thisWeek.map((r) => r.date)).size;
   const monthStart = addDays(today(), -29);
-  const prs30 = rows.filter((r) => r.date >= monthStart && state.prIds.has(r.id)).length;
+  const prs30 = work.filter((r) => r.date >= monthStart && state.prIds.has(r.id)).length;
   wrap.appendChild(h('div', { class: 'tiles four' },
     h('div', { class: 'tile' }, h('b', { text: String(weekDays) }), h('span', { text: 'DAYS THIS WEEK' })),
-    h('div', { class: 'tile' }, h('b', { text: String(weekStreak(rows)) }), h('span', { text: 'WEEK STREAK' }), h('small', { text: WEEK_GOAL + '+ days a week' })),
-    h('div', { class: 'tile' }, h('b', { text: fmt(thisWeek.reduce((s, r) => s + vol(r), 0)) }), h('span', { text: 'VOLUME THIS WEEK' })),
+    h('div', { class: 'tile' }, h('b', { text: String(weekStreak(work)) }), h('span', { text: 'WEEK STREAK' }), h('small', { text: WEEK_GOAL + '+ days a week' })),
+    h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(thisWeek.reduce((s, r) => s + vol(r), 0))) }), h('span', { text: 'VOLUME THIS WEEK' })),
     h('div', { class: 'tile' }, h('b', { text: String(prs30) }), h('span', { text: 'PRS, 30 DAYS' }))
   ));
 
   wrap.appendChild(h('h2', null, 'Consistency', h('small', { text: 'LAST 12 WEEKS' })));
-  wrap.appendChild(h('div', { class: 'card' }, heatmap(rows)));
+  wrap.appendChild(h('div', { class: 'card' }, heatmap(work)));
 
   const weeks = lastWeeks(8);
-  const vals = weeklyVolume(rows, weeks);
-  wrap.appendChild(h('h2', null, 'Weekly volume', h('small', { text: 'LB MOVED' })));
+  const vals = weeklyVolume(work, weeks);
+  wrap.appendChild(h('h2', null, 'Weekly volume', h('small', { text: unit().toUpperCase() + ' MOVED' })));
   wrap.appendChild(h('div', { class: 'card' }, chartBox({
     type: 'bar',
     data: { labels: weeks.map(shortDate), datasets: [{ data: vals, backgroundColor: vals.map((v, i) => (i === vals.length - 1 ? '#39d353' : '#196127')), borderRadius: 4, maxBarThickness: 30 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => fmt(c.parsed.y) + ' lb' } }) },
+      plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => fmt(c.parsed.y) + ' ' + unit() } }) },
       scales: axes({ beginAtZero: true })
     }
   }, 190)));
 
-  const exs = myExercises();
+  /* muscle balance */
+  wrap.appendChild(h('h2', null, 'Muscle balance', h('small', { text: 'WORKING SETS' })));
+  const mCard = h('div', { class: 'card' });
+  mCard.appendChild(seg([[7, '7 days'], [30, '30 days'], [90, '90 days']], state.muscleRange, (v) => { state.muscleRange = v; render(); }));
+  const since = addDays(today(), -(state.muscleRange - 1));
+  const counts = {};
+  work.forEach((r) => { if (r.date >= since) { const m = muscleOf(r.exercise); counts[m] = (counts[m] || 0) + r.sets; } });
+  const labels = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+  if (!labels.length) {
+    mCard.appendChild(h('div', { class: 'muted', text: 'No working sets in this range.' }));
+  } else {
+    mCard.appendChild(chartBox({
+      type: 'bar',
+      data: { labels, datasets: [{ data: labels.map((m) => counts[m]), backgroundColor: labels.map((m) => MUSCLE_COLORS[m] || '#8b949e'), borderRadius: 4, maxBarThickness: 18 }] },
+      options: {
+        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => c.parsed.x + ' sets' } }) },
+        scales: { x: { grid: { color: '#161b22' }, border: { display: false }, beginAtZero: true, ticks: { maxTicksLimit: 5 } }, y: { grid: { display: false }, border: { color: '#21262d' } } }
+      }
+    }, Math.max(120, labels.length * 30 + 30)));
+    mCard.appendChild(h('div', { class: 'muted', style: 'margin-top:8px;font-size:10px', text: 'Muscle groups are guessed from the exercise name. Tap the tag on an exercise in Log to fix one.' }));
+  }
+  wrap.appendChild(mCard);
+
+  /* strength per exercise */
+  const names = {};
+  work.forEach((r) => { const k = key(r.exercise); if (!names[k]) names[k] = { k, name: r.exercise, n: 0 }; names[k].n += 1; });
+  const exs = Object.values(names).sort((a, b) => b.n - a.n);
   if (!exs.some((e) => e.k === state.progKey)) state.progKey = exs[0].k;
   const k = state.progKey;
-  const exRows = rows.filter((r) => key(r.exercise) === k).sort(byTime);
+  const exRows = work.filter((r) => key(r.exercise) === k).sort(byTime);
   const byDay = {};
   exRows.forEach((r) => {
-    const d = byDay[r.date] = byDay[r.date] || { e: 0, w: 0 };
-    d.e = Math.max(d.e, e1rm(Number(r.weight), r.reps));
+    const d = byDay[r.date] = byDay[r.date] || { e: null, w: 0 };
     d.w = Math.max(d.w, Number(r.weight));
+    if (qual(r)) { const e = e1rm(Number(r.weight), r.reps, r.rpe); d.e = d.e === null ? e : Math.max(d.e, e); }
   });
   const days = Object.keys(byDay).sort();
-  const eSeries = days.map((d) => Math.round(byDay[d].e));
-  const wSeries = days.map((d) => byDay[d].w);
+  const eSeries = days.map((d) => (byDay[d].e === null ? null : Math.round(toDisp(byDay[d].e))));
+  const wSeries = days.map((d) => Math.round(toDisp(byDay[d].w) * 10) / 10);
   wrap.appendChild(h('h2', null, 'Strength'));
   const strength = h('div', { class: 'card' });
-  strength.appendChild(h('select', {
-    class: 'pick', onchange: (e) => { state.progKey = e.target.value; render(); }
-  }, exs.map((e) => h('option', { value: e.k, selected: e.k === k, text: e.name }))));
+  strength.appendChild(h('select', { class: 'pick', onchange: (e) => { state.progKey = e.target.value; render(); } },
+    exs.map((e) => h('option', { value: e.k, selected: e.k === k, text: e.name }))));
   strength.appendChild(chartBox({
     type: 'line',
     data: {
@@ -833,118 +1730,194 @@ function renderProgress() {
       scales: axes()
     }
   }, 210));
-  const firstE = eSeries[0];
-  const lastE = eSeries[eSeries.length - 1];
+  const eVals = eSeries.filter((v) => v !== null);
   strength.appendChild(h('div', { class: 'minis' },
-    h('div', null, h('b', { text: fmt(lastE) }), h('span', { text: 'EST. 1RM' })),
+    h('div', null, h('b', { text: eVals.length ? fmt(eVals[eVals.length - 1]) : '-' }), h('span', { text: 'EST. 1RM' })),
     h('div', null, h('b', { text: fmtW(Math.max.apply(null, wSeries)) }), h('span', { text: 'TOP WEIGHT' })),
-    h('div', null, h('b', { text: signed(lastE - firstE) }), h('span', { text: 'SINCE FIRST' }))
+    h('div', null, h('b', { text: eVals.length > 1 ? signed(eVals[eVals.length - 1] - eVals[0]) : '-' }), h('span', { text: 'SINCE FIRST' }))
   ));
   wrap.appendChild(strength);
 
   wrap.appendChild(h('h2', null, 'Personal records', h('small', { text: 'HEAVIEST SET' })));
   const prCard = h('div', { class: 'card' });
   exs.slice(0, 10).forEach((e) => {
-    const rs = rows.filter((r) => key(r.exercise) === e.k);
-    const top = rs.reduce((m, r) => (Number(r.weight) > Number(m.weight) || (Number(r.weight) === Number(m.weight) && r.reps > m.reps) ? r : m), rs[0]);
+    const rs = work.filter((r) => key(r.exercise) === e.k);
+    const top = topSet(rs);
     prCard.appendChild(h('div', { class: 'lrow' },
       h('div', { class: 'l' }, h('div', { text: e.name }), h('small', { text: shortDate(top.date) })),
-      h('div', { class: 'r' }, fmtW(top.weight) + ' × ' + top.reps, h('small', { text: 'e1RM ' + fmt(e1rm(Number(top.weight), top.reps)) }))
+      h('div', { class: 'r' }, dw(top.weight) + ' × ' + top.reps, qual(top) ? h('small', { text: 'e1RM ' + fmt(toDisp(e1rm(Number(top.weight), top.reps, top.rpe))) }) : null)
     ));
   });
   wrap.appendChild(prCard);
   return wrap;
 }
 
-function rangeStart(r) {
-  if (r === 'week') return weekStart(today());
-  if (r === 'month') return addDays(today(), -29);
+/* CREW tab */
+
+function rangeStart(range) {
+  if (range === 'week') return weekStart(today());
+  if (range === 'month') return today().slice(0, 7) + '-01';
   return '0000-00-00';
 }
 
-function liftOptions() {
-  const m = {};
-  state.workouts.forEach((r) => {
-    const k = key(r.exercise);
-    const o = m[k] = m[k] || { k, name: r.exercise, users: new Set(), n: 0 };
-    o.users.add(r.profile_id);
-    o.n += 1;
+function crewStats(start, end) {
+  return state.profiles.map((p) => {
+    const rows = (state.byUser[p.id] || []).filter((r) => !isWarm(r) && r.date >= start && (!end || r.date <= end));
+    return {
+      p,
+      volume: rows.reduce((s, r) => s + vol(r), 0),
+      sets: rows.reduce((s, r) => s + r.sets, 0),
+      days: new Set(rows.map((r) => r.date)).size,
+      prs: rows.filter((r) => state.prIds.has(r.id)).length
+    };
   });
-  return Object.values(m).map((o) => ({ k: o.k, name: o.name, users: o.users.size, n: o.n })).sort((a, b) => b.users - a.users || b.n - a.n);
 }
 
-function weightChanges() {
-  const out = [];
-  const cutoff = addDays(today(), -30);
-  state.profiles.filter((p) => p.share_weight).forEach((p) => {
-    const arr = state.bodyweights.filter((b) => b.profile_id === p.id).sort(byDate);
-    if (arr.length < 2) return;
-    const latest = arr[arr.length - 1];
-    const base = arr.filter((b) => b.date <= cutoff).pop() || arr[0];
-    if (base === latest) return;
-    out.push({ p, delta: Number(latest.weight) - Number(base.weight), since: base.date });
+function metricText(metric, v) {
+  if (metric === 'volume') return fmt(toDisp(v)) + ' ' + unit();
+  if (metric === 'sets') return v + ' sets';
+  if (metric === 'days') return v + (v === 1 ? ' day' : ' days');
+  return v + (v === 1 ? ' PR' : ' PRs');
+}
+
+function lbRow(i, p, valText, sub, frac) {
+  const c = colorOf(p.id);
+  const st = statusOf(p);
+  return h('div', { class: 'lb' + (p.id === state.me.id ? ' me' : '') },
+    h('div', { class: 'rank r' + (i + 1), text: String(i + 1) }),
+    h('div', null,
+      h('div', { class: 'lbname' }, avatar(p, 22), p.username,
+        st.atGym ? h('em', { text: 'AT GYM' }) : null,
+        st.slacking ? h('em', { class: 'slackem', style: 'color:#f87171;border-color:rgba(248,113,113,0.4)', text: 'SLACKING' }) : null),
+      h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.max(2, Math.round(frac * 100)) + '%;background:' + c }))
+    ),
+    h('div', { class: 'lbval' }, valText, sub ? h('small', { text: sub }) : null)
+  );
+}
+
+function bestE1(pid, k, start, end) {
+  let best = null;
+  (state.byUser[pid] || []).forEach((r) => {
+    if (key(r.exercise) !== k || !qual(r)) return;
+    if (start && r.date < start) return;
+    if (end && r.date > end) return;
+    const e = e1rm(Number(r.weight), r.reps, r.rpe);
+    if (!best || e > best.e) best = { e, r };
   });
+  return best;
+}
+
+function statusPills(p) {
+  const st = statusOf(p);
+  const out = [];
+  if (st.atGym) out.push(h('span', { class: 'pill gym', text: 'AT THE GYM' }));
+  if (st.slacking) out.push(h('span', { class: 'pill slack', text: 'SLACKING ' + st.idle + 'D' }));
+  else if (st.trainedToday) out.push(h('span', { class: 'pill done', text: 'TRAINED TODAY' }));
+  else if (st.kind === 'new') out.push(h('span', { class: 'pill ok', text: 'NO SETS YET' }));
+  else {
+    const plan = planFor(p.id, today());
+    if (hasSchedule(p.id) && !plan.routine) out.push(h('span', { class: 'pill off', text: 'REST DAY' }));
+    else out.push(h('span', { class: 'pill ok', text: 'LAST ' + shortDate(st.lastDate).toUpperCase() }));
+  }
   return out;
 }
 
 function renderCrew() {
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'CREW' }));
-  wrap.appendChild(h('h1', null, 'The ', h('span', { class: 'accent', text: 'crew' })));
+  wrap.appendChild(h('h1', null, 'The ', h('span', { class: 'accent', text: 'squad' })));
 
-  const ws = weekStart(today());
-  const weekRows = state.workouts.filter((r) => r.date >= ws);
-  wrap.appendChild(h('div', { class: 'tiles three' },
-    h('div', { class: 'tile' }, h('b', { text: String(state.profiles.length) }), h('span', { text: 'LIFTERS' })),
-    h('div', { class: 'tile' }, h('b', { text: fmt(weekRows.reduce((s, r) => s + vol(r), 0)) }), h('span', { text: 'LB THIS WEEK' })),
-    h('div', { class: 'tile' }, h('b', { text: String(weekRows.reduce((s, r) => s + r.sets, 0)) }), h('span', { text: 'SETS THIS WEEK' }))
-  ));
+  const meP = myProfile();
+  const meSt = statusOf(meP);
 
-  /* leaderboard */
-  const metric = state.crewMetric;
-  const start = rangeStart(state.crewRange);
-  const table = state.profiles.map((p) => {
-    const rs = (state.byUser[p.id] || []).filter((r) => r.date >= start);
-    return {
-      p,
-      volume: Math.round(rs.reduce((s, r) => s + vol(r), 0)),
-      sets: rs.reduce((s, r) => s + r.sets, 0),
-      days: new Set(rs.map((r) => r.date)).size
-    };
-  }).sort((a, b) => b[metric] - a[metric]);
-  const maxV = Math.max(1, ...table.map((t) => t[metric]));
-  const unit = { volume: 'LB', sets: 'SETS', days: 'DAYS' }[metric];
-
-  wrap.appendChild(h('h2', null, 'Leaderboard'));
-  const lbCard = h('div', { class: 'card' });
-  lbCard.appendChild(seg([['week', 'This week'], ['month', '30 days'], ['all', 'All time']], state.crewRange, (v) => { state.crewRange = v; render(); }));
-  lbCard.appendChild(seg([['volume', 'Volume'], ['days', 'Days'], ['sets', 'Sets']], metric, (v) => { state.crewMetric = v; render(); }));
-  table.forEach((t, i) => {
-    const mine = t.p.id === state.me.id;
-    lbCard.appendChild(h('div', { class: 'lb' + (mine ? ' me' : '') },
-      h('span', { class: 'rank r' + (i + 1), text: String(i + 1) }),
-      h('div', null,
-        h('div', { class: 'lbname' }, avatar(t.p, 20), t.p.username, mine ? h('em', { text: 'YOU' }) : null),
-        h('div', { class: 'bar' }, h('i', { style: 'width:' + ((t[metric] / maxV) * 100) + '%;background:' + colorOf(t.p.id) }))
+  /* who is where */
+  const stCard = h('div', { class: 'card' });
+  state.profiles.forEach((p) => {
+    const plan = planFor(p.id, today());
+    stCard.appendChild(h('div', { class: 'lrow' },
+      h('div', { class: 'l' },
+        h('div', { class: 'lbname' }, avatar(p, 24), p.username),
+        plan.routine ? h('small', { text: 'Today: ' + plan.routine.name }) : null
       ),
-      h('div', { class: 'lbval' }, fmt(t[metric]), h('small', { text: unit }))
+      h('div', { class: 'r' }, statusPills(p))
     ));
   });
+  stCard.appendChild(h('button', {
+    class: 'btn ' + (meSt.atGym ? 'ghost' : ''), style: 'margin-top:10px', onclick: toggleAtGym,
+    text: meSt.atGym ? 'check out of the gym' : "I'm at the gym"
+  }));
+  wrap.appendChild(stCard);
+
+  /* tiles */
+  const wk = crewStats(weekStart(today()));
+  wrap.appendChild(h('div', { class: 'tiles three', style: 'margin-top:12px' },
+    h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.days, 0)) }), h('span', { text: 'SESSIONS THIS WEEK' })),
+    h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(wk.reduce((s, x) => s + x.volume, 0))) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
+    h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.prs, 0)) }), h('span', { text: 'PRS THIS WEEK' }))
+  ));
+
+  /* challenges */
+  const t = today();
+  const ym = t.slice(0, 7);
+  const mStart = ym + '-01';
+  const mEnd = ym + '-' + String(daysInMonth(ym)).padStart(2, '0');
+  wrap.appendChild(h('h2', null, 'Challenges'));
+  const chCard = h('div', { class: 'card' });
+  const mv = crewStats(mStart, mEnd).sort((a, b) => b.volume - a.volume);
+  const mtop = mv.length ? Math.max(mv[0].volume, 1) : 1;
+  chCard.appendChild(h('div', { class: 'chal' },
+    h('div', { class: 'chalhead' }, h('b', { text: 'Monthly volume' }), h('small', { class: 'muted', text: monthLabel(ym) + ', ' + (daysInMonth(ym) - parseInt(t.slice(8), 10)) + ' days left' })),
+    mv.map((x, i) => lbRow(i, x.p, fmt(toDisp(x.volume)) + ' ' + unit(), x.days + ' sessions', x.volume / mtop))
+  ));
+
+  const mine = state.challenges.slice().sort((a, b) => (a.end_date < b.end_date ? 1 : -1));
+  mine.forEach((c) => {
+    const k = key(c.exercise);
+    const board = state.profiles.map((p) => ({ p, b: bestE1(p.id, k, c.start_date, c.end_date) }))
+      .filter((x) => x.b).sort((a, b) => b.b.e - a.b.e);
+    const status = t < c.start_date ? 'starts ' + shortDate(c.start_date) : t > c.end_date ? 'ended ' + shortDate(c.end_date) : daysBetween(t, c.end_date) + ' days left';
+    const top = board.length ? board[0].b.e : 1;
+    const box = h('div', { class: 'chal' },
+      h('div', { class: 'chalhead' },
+        h('b', { text: c.name }),
+        h('small', { class: 'muted', text: c.exercise + ', ' + status })
+      )
+    );
+    if (!board.length) box.appendChild(h('div', { class: 'muted', text: 'No qualifying sets yet.' }));
+    board.forEach((x, i) => box.appendChild(lbRow(i, x.p, fmt(toDisp(x.b.e)) + ' ' + unit(), 'est. 1RM', x.b.e / top)));
+    if (c.creator_id === state.me.id) {
+      let armed = false;
+      const del = h('button', { class: 'btn ghost sm danger', style: 'margin-top:8px', text: 'delete race' });
+      del.addEventListener('click', () => {
+        if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+        deleteChallenge(c.id);
+      });
+      box.appendChild(del);
+    }
+    chCard.appendChild(box);
+  });
+  chCard.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:12px', onclick: openChallengeSheet, text: '+ new lift race' }));
+  wrap.appendChild(chCard);
+
+  /* leaderboard */
+  wrap.appendChild(h('h2', null, 'Leaderboard'));
+  const lbCard = h('div', { class: 'card' });
+  lbCard.appendChild(seg([['week', 'this week'], ['month', 'this month'], ['all', 'all time']], state.crewRange, (v) => { state.crewRange = v; render(); }));
+  lbCard.appendChild(seg([['volume', 'volume'], ['sets', 'sets'], ['days', 'days'], ['prs', 'PRs']], state.crewMetric, (v) => { state.crewMetric = v; render(); }));
+  const M = state.crewMetric;
+  const rows = crewStats(rangeStart(state.crewRange)).sort((a, b) => b[M] - a[M]);
+  const mx = rows.length ? Math.max(rows[0][M], 1) : 1;
+  rows.forEach((x, i) => lbCard.appendChild(lbRow(i, x.p, metricText(M, x[M]), null, x[M] / mx)));
   wrap.appendChild(lbCard);
 
-  /* trend */
+  /* volume trend */
   const weeks = lastWeeks(8);
-  wrap.appendChild(h('h2', null, 'Weekly volume', h('small', { text: 'EVERYONE, 8 WEEKS' })));
+  wrap.appendChild(h('h2', null, 'Weekly volume', h('small', { text: unit().toUpperCase() })));
   wrap.appendChild(h('div', { class: 'card' }, chartBox({
     type: 'line',
     data: {
       labels: weeks.map(shortDate),
-      datasets: state.profiles.map((p) => {
-        const mine = p.id === state.me.id;
-        return lineSet(p.username, weeklyVolume(state.byUser[p.id] || [], weeks), colorOf(p.id), {
-          borderWidth: mine ? 3 : 2, pointRadius: mine ? 3 : 2, backgroundColor: 'transparent'
-        });
-      })
+      datasets: state.profiles.map((p) => lineSet(p.username, weeklyVolume((state.byUser[p.id] || []).filter((r) => !isWarm(r)), weeks), colorOf(p.id), { backgroundColor: 'transparent' }))
     },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
@@ -954,180 +1927,194 @@ function renderCrew() {
   }, 220)));
 
   /* lift board */
-  const opts = liftOptions();
-  if (opts.length) {
-    if (!opts.some((o) => o.k === state.liftKey)) state.liftKey = opts[0].k;
-    const lk = state.liftKey;
-    const board = state.profiles.map((p) => {
-      const rs = (state.byUser[p.id] || []).filter((r) => key(r.exercise) === lk);
-      if (!rs.length) return null;
-      let top = rs[0];
-      rs.forEach((r) => { if (e1rm(Number(r.weight), r.reps) > e1rm(Number(top.weight), top.reps)) top = r; });
-      return { p, top, e: e1rm(Number(top.weight), top.reps) };
-    }).filter(Boolean).sort((a, b) => b.e - a.e);
-    wrap.appendChild(h('h2', null, 'Lift board', h('small', { text: 'BEST EST. 1RM' })));
-    const lc = h('div', { class: 'card' });
-    lc.appendChild(h('select', { class: 'pick', onchange: (e) => { state.liftKey = e.target.value; render(); } },
-      opts.map((o) => h('option', { value: o.k, selected: o.k === lk, text: o.name + (o.users > 1 ? ' (' + o.users + ')' : '') }))));
-    board.forEach((b, i) => {
-      lc.appendChild(h('div', { class: 'lb' + (b.p.id === state.me.id ? ' me' : '') },
-        h('span', { class: 'rank r' + (i + 1), text: String(i + 1) }),
-        h('div', null,
-          h('div', { class: 'lbname' }, avatar(b.p, 20), b.p.username),
-          h('div', { class: 'muted', style: 'font-size:10px;margin-top:2px', text: 'best set ' + fmtW(b.top.weight) + ' × ' + b.top.reps + ' · ' + shortDate(b.top.date) })
-        ),
-        h('div', { class: 'lbval' }, fmt(b.e), h('small', { text: 'E1RM' }))
-      ));
+  const names = {};
+  state.workouts.forEach((r) => {
+    if (!qual(r)) return;
+    const k = key(r.exercise);
+    if (!names[k]) names[k] = { k, name: r.exercise, n: 0 };
+    names[k].n += 1;
+  });
+  const exs = Object.values(names).sort((a, b) => b.n - a.n);
+  wrap.appendChild(h('h2', null, 'Lift board', h('small', { text: 'BEST ESTIMATED 1RM' })));
+  const lift = h('div', { class: 'card' });
+  if (!exs.length) {
+    lift.appendChild(h('div', { class: 'muted', text: 'No working sets logged yet.' }));
+  } else {
+    if (!exs.some((e) => e.k === state.liftKey)) state.liftKey = exs[0].k;
+    lift.appendChild(h('select', { class: 'pick', onchange: (e) => { state.liftKey = e.target.value; render(); } },
+      exs.map((e) => h('option', { value: e.k, selected: e.k === state.liftKey, text: e.name }))));
+    lift.appendChild(seg([['e1rm', 'heaviest'], ['rel', 'per bodyweight']], state.liftSort, (v) => { state.liftSort = v; render(); }));
+    const list = state.profiles.map((p) => {
+      const b = bestE1(p.id, state.liftKey);
+      const bw = state.bwLatest[p.id] ? Number(state.bwLatest[p.id].weight) : null;
+      return { p, b, rel: b && bw ? b.e / bw : null };
+    }).filter((x) => x.b);
+    const sortKey = state.liftSort === 'rel' ? 'rel' : null;
+    list.sort((a, b) => (sortKey ? (b.rel || 0) - (a.rel || 0) : b.b.e - a.b.e));
+    const topv = list.length ? Math.max(sortKey ? (list[0].rel || 1) : list[0].b.e, 0.0001) : 1;
+    list.forEach((x, i) => {
+      const val = sortKey ? (x.rel === null ? '-' : x.rel.toFixed(2) + 'x BW') : fmt(toDisp(x.b.e)) + ' ' + unit();
+      const sub = sortKey ? fmt(toDisp(x.b.e)) + ' ' + unit() : (x.rel !== null ? x.rel.toFixed(2) + 'x BW' : null);
+      const frac = sortKey ? ((x.rel || 0) / topv) : (x.b.e / topv);
+      lift.appendChild(lbRow(i, x.p, val, sub, frac));
     });
-    wrap.appendChild(lc);
   }
+  wrap.appendChild(lift);
 
-  /* weight changes */
-  const wc = weightChanges();
-  if (wc.length) {
-    wrap.appendChild(h('h2', null, 'Weight change', h('small', { text: 'SHARED BY CREW, LB' })));
-    const wcCard = h('div', { class: 'card' });
-    wc.forEach((c) => {
-      wcCard.appendChild(h('div', { class: 'lrow' },
-        h('div', { class: 'l lbname' }, avatar(c.p, 20), c.p.username),
-        h('div', { class: 'r', style: 'color:#58d9f5' }, signed(c.delta), h('small', { text: 'since ' + shortDate(c.since) }))
-      ));
-    });
-    wrap.appendChild(wcCard);
-  }
+  /* body weights */
+  wrap.appendChild(h('h2', null, 'Weigh-ins'));
+  const bwCard = h('div', { class: 'card' });
+  let anyBw = false;
+  state.profiles.forEach((p) => {
+    const latest = state.bwLatest[p.id];
+    if (!latest) return;
+    anyBw = true;
+    const cutoff = addDays(today(), -30);
+    const older = state.bodyweights.filter((b) => b.profile_id === p.id && b.date <= cutoff).sort(byDate);
+    const base = older.length ? older[older.length - 1] : state.bodyweights.filter((b) => b.profile_id === p.id).sort(byDate)[0];
+    const diff = base && base.id !== latest.id ? toDisp(latest.weight) - toDisp(base.weight) : null;
+    bwCard.appendChild(h('div', { class: 'lrow' },
+      h('div', { class: 'l' }, h('div', { class: 'lbname' }, avatar(p, 22), p.username), h('small', { text: shortDate(latest.date) })),
+      h('div', { class: 'r' }, dw(latest.weight) + ' ' + unit(), diff !== null ? h('small', { text: signed(diff) + ' vs ' + shortDate(base.date) }) : null)
+    ));
+  });
+  if (!anyBw) bwCard.appendChild(h('div', { class: 'muted', text: 'Nobody has logged a weigh-in yet. Use the Body tab.' }));
+  wrap.appendChild(bwCard);
 
   /* feed */
-  const pmap = {};
-  state.profiles.forEach((p) => { pmap[p.id] = p; });
-  const recent = state.workouts.slice().sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 12);
-  wrap.appendChild(h('h2', null, 'Recent activity'));
+  wrap.appendChild(h('h2', null, 'Recent PRs', h('small', { text: 'GIVE SOME KUDOS' })));
   const feed = h('div', { class: 'card' });
-  if (!recent.length) feed.appendChild(h('div', { class: 'muted', text: 'No sets logged yet.' }));
-  recent.forEach((r) => {
-    const p = pmap[r.profile_id];
+  const prs = state.workouts.filter((r) => state.prIds.has(r.id)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 12);
+  if (!prs.length) feed.appendChild(h('div', { class: 'muted', text: 'No PRs yet. Beat your first weight on any lift and it shows up here.' }));
+  prs.forEach((r) => {
+    const p = state.profiles.find((x) => x.id === r.profile_id);
     if (!p) return;
+    const set = state.kudosBy[r.id] || new Set();
+    const mineK = set.has(state.me.id);
+    const own = r.profile_id === state.me.id;
     feed.appendChild(h('div', { class: 'feed' },
-      avatar(p, 22),
+      avatar(p, 24),
       h('div', null,
-        h('b', { text: p.username + ' ' }),
-        r.exercise + ' ' + fmtW(r.weight) + '×' + r.reps,
-        state.prIds.has(r.id) ? h('span', { class: 'star', text: '★ PR' }) : null
+        h('div', null, h('b', { text: p.username }), ' hit ', h('b', { text: dw(r.weight) + ' ' + unit() + ' x ' + r.reps }), ' on ' + r.exercise),
+        h('small', { class: 'muted', text: shortDate(r.date) })
       ),
-      h('span', { class: 't', text: ago(r.created_at) })
+      h('span', { class: 't', text: ago(r.created_at) }),
+      own
+        ? (set.size ? h('span', { class: 'kudos', text: '★ ' + set.size }) : null)
+        : h('button', { class: 'kudos' + (mineK ? ' on' : ''), onclick: () => toggleKudos(r.id), text: '★ ' + (set.size || 'kudos') })
     ));
   });
   wrap.appendChild(feed);
   return wrap;
 }
 
+/* BODY tab */
+
 function renderBody() {
-  const ws = state.myWeights;
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'BODY' }));
-  wrap.appendChild(h('h1', null, 'Body', h('span', { class: 'accent', text: 'weight' })));
+  wrap.appendChild(h('h1', null, 'Body ', h('span', { class: 'accent', text: 'weight' })));
+  const ws = state.myWeights;
+  const latest = ws.length ? ws[ws.length - 1] : null;
 
-  const latest = ws[ws.length - 1];
-  if (latest) {
-    const cutoff = addDays(today(), -30);
-    const base = ws.filter((b) => b.date <= cutoff).pop() || ws[0];
-    const d30 = ws.length > 1 ? Number(latest.weight) - Number(base.weight) : 0;
-    const dAll = ws.length > 1 ? Number(latest.weight) - Number(ws[0].weight) : 0;
-    wrap.appendChild(h('div', { class: 'tiles four' },
-      h('div', { class: 'tile' }, h('b', { text: fmtW(latest.weight) }), h('span', { text: 'CURRENT LB' })),
-      h('div', { class: 'tile' }, h('b', { text: signed(d30) }), h('span', { text: '30 DAYS' })),
-      h('div', { class: 'tile' }, h('b', { text: signed(dAll) }), h('span', { text: 'SINCE START' })),
-      h('div', { class: 'tile' }, h('b', { text: String(ws.length) }), h('span', { text: 'WEIGH-INS' }))
-    ));
-    const gap = daysBetween(latest.date, today());
-    if (gap >= 7) wrap.appendChild(h('div', { class: 'nudge', text: 'Last weigh-in was ' + gap + ' days ago. Time to step on the scale.' }));
+  if (!latest) {
+    wrap.appendChild(h('div', { class: 'nudge', text: 'No weigh-ins yet. Add one below, then update it every week or so.' }));
+  } else if (daysBetween(latest.date, today()) > 7) {
+    wrap.appendChild(h('div', { class: 'nudge', text: 'Last weigh-in was ' + daysBetween(latest.date, today()) + ' days ago. Time for a new one.' }));
   }
 
-  const wIn = h('input', { type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: latest ? fmtW(latest.weight) : '0' });
+  if (latest) {
+    const cutoff = addDays(today(), -30);
+    const older = ws.filter((b) => b.date <= cutoff);
+    const base = older.length ? older[older.length - 1] : ws[0];
+    const d30 = base.id !== latest.id ? toDisp(latest.weight) - toDisp(base.weight) : null;
+    const total = ws.length > 1 ? toDisp(latest.weight) - toDisp(ws[0].weight) : null;
+    wrap.appendChild(h('div', { class: 'tiles three' },
+      h('div', { class: 'tile' }, h('b', { text: dw(latest.weight) }), h('span', { text: 'NOW, ' + unit().toUpperCase() })),
+      h('div', { class: 'tile' }, h('b', { text: d30 === null ? '-' : signed(d30) }), h('span', { text: 'VS ' + (older.length ? '30 DAYS AGO' : 'FIRST') })),
+      h('div', { class: 'tile' }, h('b', { text: total === null ? '-' : signed(total) }), h('span', { text: 'TOTAL CHANGE' }))
+    ));
+  }
+
+  const wIn = h('input', { type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: latest ? dw(latest.weight) : '0' });
   const dIn = h('input', { type: 'date', value: today() });
   const go = () => logWeight(parseFloat(wIn.value), dIn.value || today());
   wIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
   wrap.appendChild(h('div', { class: 'card' },
     h('div', { class: 'formrow' },
-      h('label', { class: 'fld' }, h('span', { text: 'WEIGHT (LB)' }), wIn),
+      h('label', { class: 'fld' }, h('span', { text: unit().toUpperCase() }), wIn),
       h('label', { class: 'fld' }, h('span', { text: 'DATE' }), dIn),
-      h('button', { class: 'addbtn', onclick: go, title: 'Log weight', text: '+' })
+      h('button', { class: 'addbtn', onclick: go, title: 'Save weigh-in', text: '+' })
     )
   ));
 
-  if (ws.length) {
+  if (ws.length > 1) {
     wrap.appendChild(h('h2', null, 'Trend'));
-    const pts = ws.map((b) => Number(b.weight));
-    const lo = Math.min.apply(null, pts);
-    const hi = Math.max.apply(null, pts);
     wrap.appendChild(h('div', { class: 'card' }, chartBox({
       type: 'line',
-      data: { labels: ws.map((b) => shortDate(b.date)), datasets: [lineSet('Weight', pts, '#39d353', { fill: true })] },
+      data: { labels: ws.map((b) => shortDate(b.date)), datasets: [lineSet('Body weight', ws.map((b) => Math.round(toDisp(b.weight) * 10) / 10), '#58d9f5', { fill: true })] },
       options: {
-        responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => fmtW(c.parsed.y) + ' lb' } }) },
-        scales: axes({ suggestedMin: Math.floor(lo - 3), suggestedMax: Math.ceil(hi + 3) })
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => c.parsed.y + ' ' + unit() } }) },
+        scales: axes()
       }
     }, 200)));
-
-    wrap.appendChild(h('h2', null, 'History'));
-    const hist = h('div', { class: 'card' });
-    ws.slice().reverse().slice(0, 30).forEach((b) => {
-      hist.appendChild(h('div', { class: 'lrow' },
-        h('div', { class: 'l', text: shortDate(b.date) }),
-        h('div', { class: 'r' }, fmtW(b.weight) + ' lb'),
-        h('button', { class: 'del', title: 'Delete', onclick: () => deleteWeight(b.id), text: '×' })
-      ));
-    });
-    wrap.appendChild(hist);
-  } else {
-    wrap.appendChild(emptyCard('No weigh-ins yet', 'Log your weight above, then update it whenever you step on the scale.'));
   }
 
-  const on = !!myProfile().share_weight;
-  wrap.appendChild(h('h2', null, 'Privacy'));
-  wrap.appendChild(h('div', { class: 'card' }, h('div', { class: 'switchrow' },
-    h('p', null, 'Show my 30-day weight change on the Crew tab', h('small', { text: 'Only the change, never the number. Off by default.' })),
-    h('button', { class: 'switch' + (on ? ' on' : ''), onclick: toggleShare, title: 'Toggle sharing' })
-  )));
+  if (ws.length) {
+    wrap.appendChild(h('h2', null, 'History'));
+    const hist = h('div', { class: 'card' });
+    ws.slice().reverse().slice(0, 20).forEach((b) => {
+      let armed = false;
+      const del = h('button', { text: '×', title: 'Delete' });
+      del.addEventListener('click', () => {
+        if (!armed) { armed = true; del.textContent = '?'; return; }
+        deleteWeight(b.id);
+      });
+      hist.appendChild(h('div', { class: 'xrow' }, h('span', { text: longDate(b.date) }), h('b', { text: dw(b.weight) + ' ' + unit() }), del));
+    });
+    wrap.appendChild(hist);
+  }
   return wrap;
 }
 
-/* shell */
+/* render */
 
 function render() {
+  const y = window.scrollY || 0;
   destroyCharts();
   state.pending = [];
-  const view = $('view');
-  const y = window.scrollY;
-  view.replaceChildren();
   document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === state.tab));
-
+  const view = $('view');
+  if (!state.me) return;
   if (!state.loaded) {
-    view.appendChild(emptyCard('Loading', 'Pulling your sets...'));
+    view.replaceChildren(emptyCard('Loading', 'Pulling your sets...'));
     return;
   }
   if (state.error) {
-    const hint = /share_weight|bodyweights|schema cache|does not exist/i.test(state.error)
-      ? 'Looks like setup2.sql has not been run yet. Run it in the Supabase SQL Editor, then retry.'
+    const hint = /rpe|set_type|unit|at_gym|routines|schedule|kudos|challenges|exercise_muscles|schema cache|does not exist|bodyweights/i.test(state.error)
+      ? 'Looks like setup3.sql has not been run yet. Run it in the Supabase SQL Editor, then retry.'
       : 'Could not reach the database.';
-    view.appendChild(h('div', { class: 'card errbox' },
+    view.replaceChildren(h('div', { class: 'card errbox' },
       h('p', { text: state.error }),
       h('p', { class: 'muted', text: hint }),
       h('button', { class: 'btn ghost', onclick: () => refreshData(true), text: 'retry' })
     ));
     return;
   }
-  const fn = { log: renderLog, progress: renderProgress, crew: renderCrew, body: renderBody }[state.tab];
-  view.appendChild(fn());
-  state.pending.forEach((f) => f());
+  const fn = { log: renderLog, plan: renderPlan, progress: renderProgress, crew: renderCrew, body: renderBody }[state.tab] || renderLog;
+  view.replaceChildren(fn());
+  const jobs = state.pending;
   state.pending = [];
+  jobs.forEach((f) => f());
   window.scrollTo(0, y);
-
   if (state.focusEx) {
-    const k = state.focusEx;
+    const want = state.focusEx;
     state.focusEx = '';
-    const input = Array.from(document.querySelectorAll('input[data-wk]')).find((i) => i.getAttribute('data-wk') === k);
-    if (input) { input.focus(); input.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+    const el = Array.from(view.querySelectorAll('input[data-wk]')).find((i) => i.getAttribute('data-wk') === want);
+    if (el) {
+      try { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+    }
   }
 }
 
@@ -1135,7 +2122,7 @@ function setTab(t) {
   state.tab = t;
   render();
   window.scrollTo(0, 0);
-  if (t === 'crew' || t === 'progress') refreshData(false);
+  if (t === 'crew' || t === 'progress' || t === 'plan') refreshData(false);
 }
 
 /* auth */
@@ -1184,11 +2171,13 @@ async function auth(create) {
 }
 
 async function enter(profile) {
-  state.me = profile;
-  lsSet('gym_me', JSON.stringify(profile));
+  state.me = { id: profile.id, username: profile.username };
+  lsSet('gym_me', JSON.stringify(state.me));
   state.logDate = today();
+  state.tab = 'log';
   state.loaded = false;
   state.error = '';
+  state.restOn = lsGet('gym_rest_on') !== '0';
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('who').replaceChildren(avatar(profile, 20), h('span', { text: profile.username }));
@@ -1201,9 +2190,12 @@ function logout() {
   state.me = null;
   state.workouts = [];
   state.bodyweights = [];
+  state.drafts = {};
+  state.extra = [];
   state.rest = null;
   stopRestTimer();
   destroyCharts();
+  closeSheet();
   $('pin').value = '';
   showLogin();
 }
@@ -1213,14 +2205,12 @@ function logout() {
 $('loginBtn').addEventListener('click', () => auth(false));
 $('createBtn').addEventListener('click', () => auth(true));
 $('pin').addEventListener('keydown', (e) => { if (e.key === 'Enter') auth(false); });
-$('who').addEventListener('click', logout);
+$('who').addEventListener('click', openAccount);
 document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
 document.addEventListener('visibilitychange', () => { if (!document.hidden && state.me) refreshData(false); });
 
 (function boot() {
-  const r = parseInt(lsGet('gym_rest'), 10);
-  if (REST_PRESETS.indexOf(r) >= 0) state.restSecs = r;
   let saved = null;
   try { saved = JSON.parse(lsGet('gym_me')); } catch (e) { saved = null; }
   if (saved && saved.id) enter(saved);
