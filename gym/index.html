@@ -103,7 +103,10 @@
   .typebar { display: flex; gap: 4px; margin-top: 8px; }
   .typebar button { flex: 1; font-size: 10px; padding: 5px 0; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
   .typebar button.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
-  .tools { display: flex; gap: 8px; margin-top: 8px; }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .exnote { font-size: 11px; color: #e6a817; margin-bottom: 8px; cursor: pointer; }
+  .sstag { font-size: 9px; letter-spacing: 0.08em; color: #58d9f5; border: 1px solid rgba(88,217,245,0.3); border-radius: 99px; padding: 0 8px; margin-left: 6px; }
+  textarea.field { resize: vertical; font-family: inherit; }
   .tools button { font-size: 10px; color: #8b949e; border: 1px solid #21262d; border-radius: 6px; padding: 4px 10px; }
   .tools button:hover { border-color: #39d353; color: #39d353; }
   .addex { width: 100%; padding: 15px; border: 1px dashed #30363d; border-radius: 12px; color: #8b949e; font-size: 12px; letter-spacing: 0.08em; transition: all 0.2s; }
@@ -296,7 +299,7 @@
       <button data-tab="log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9v6M20.5 9v6M6.5 12h11"/></svg>LOG</button>
       <button data-tab="plan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>PLAN</button>
       <button data-tab="progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>PROGRESS</button>
-      <button data-tab="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/></svg>CREW</button>
+      <button data-tab="crew"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.5 0 4.5 2 4.5 4.5"/></svg>HOMIES</button>
       <button data-tab="body"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M8 10a4 4 0 0 1 8 0"/><path d="M12 10l2-2"/></svg>BODY</button>
     </div>
   </nav>
@@ -330,7 +333,7 @@ const LIBRARY = [
 ];
 
 const state = {
-  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], settings: [], overrides: [], kudos: [], challenges: [], muscles: {},
+  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], settings: [], exSettings: [], exMap: {}, ss: {}, overrides: [], kudos: [], challenges: [], muscles: {},
   mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, setMap: {}, ovMap: {},
   unit: 'lb',
   tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, focusEx: '',
@@ -354,7 +357,7 @@ function h(tag, props, ...kids) {
       else e.setAttribute(k, v === true ? '' : v);
     }
   }
-  kids.flat().forEach((c) => {
+  kids.flat(Infinity).forEach((c) => {
     if (c == null || c === false) return;
     e.append(c.nodeType ? c : document.createTextNode(String(c)));
   });
@@ -539,7 +542,8 @@ async function loadAll() {
     fetchAll('kudos', 'id, workout_id, from_profile', (q) => q.order('id')),
     fetchAll('challenges', 'id, creator_id, name, exercise, start_date, end_date, created_at', (q) => q.order('created_at').order('id')),
     fetchAll('exercise_muscles', 'key, muscle', (q) => q.order('key')),
-    fetchAll('schedule_settings', 'profile_id, mode, cycle, pos, pos_date', (q) => q.order('profile_id')).catch(() => [])
+    fetchAll('schedule_settings', 'profile_id, mode, cycle, pos, pos_date', (q) => q.order('profile_id')).catch(() => []),
+    fetchAll('exercise_settings', 'profile_id, key, note, rep_min, rep_max, jump', (q) => q.order('profile_id').order('key')).catch(() => [])
   ]);
   state.profiles = r[0];
   state.workouts = r[1].map(normSet);
@@ -552,6 +556,7 @@ async function loadAll() {
   state.muscles = {};
   r[8].forEach((m) => { state.muscles[m.key] = m.muscle; });
   state.settings = r[9].map((x) => Object.assign({}, x, { cycle: Array.isArray(x.cycle) ? x.cycle : [] }));
+  state.exSettings = r[10];
   derive();
 }
 
@@ -594,6 +599,8 @@ function derive() {
   state.kudos.forEach((k) => { (state.kudosBy[k.workout_id] = state.kudosBy[k.workout_id] || new Set()).add(k.from_profile); });
   state.schMap = {};
   state.schedule.forEach((s) => { state.schMap[s.profile_id + '|' + s.weekday] = s; });
+  state.exMap = {};
+  state.exSettings.forEach((x) => { if (x.profile_id === me) state.exMap[x.key] = x; });
   state.setMap = {};
   state.settings.forEach((s) => { state.setMap[s.profile_id] = s; });
   state.ovMap = {};
@@ -669,13 +676,30 @@ function suggestion(k, name, before) {
   if (!prior) return null;
   const top = topSet(prior.rows);
   const comp = isCompound(name);
-  const inc = state.unit === 'kg' ? (comp ? 2.5 : 1) : (comp ? 5 : 2.5);
+  const pref = state.exMap[k];
+  const inc = pref && Number(pref.jump) > 0 ? toDisp(pref.jump) : (state.unit === 'kg' ? (comp ? 2.5 : 1) : (comp ? 5 : 2.5));
   const w = toDisp(top.weight);
   const rpe = top.rpe;
   let nw = w;
   let nr = top.reps;
   let why;
-  if (rpe != null) {
+  if (pref && pref.rep_min && pref.rep_max) {
+    const lo = pref.rep_min;
+    const hi = pref.rep_max;
+    if (rpe != null && rpe >= 10) {
+      why = 'RPE 10 last time, match it before progressing';
+    } else if (top.reps >= hi) {
+      nw = w + inc;
+      nr = lo;
+      why = 'hit the top of your ' + lo + ' to ' + hi + ' range, add weight';
+    } else if (top.reps < lo) {
+      nr = lo;
+      why = 'below your ' + lo + ' to ' + hi + ' range, work up to ' + lo;
+    } else {
+      nr = top.reps + 1;
+      why = 'inside your ' + lo + ' to ' + hi + ' range, add a rep';
+    }
+  } else if (rpe != null) {
     if (rpe <= 8) {
       nw = w + inc;
       why = 'last top set was RPE ' + rpe + ', room to add weight';
@@ -694,6 +718,24 @@ function suggestion(k, name, before) {
     why = 'add a rep, then add weight';
   }
   return { w: Math.round(nw * 10) / 10, r: nr, why, from: top };
+}
+
+/* streaks: a streak is the number of training days in a chain, broken by 3 days with no workout */
+const STREAK_BREAK = 3;
+function streakOf(pid) {
+  const ds = Array.from(new Set((state.byUser[pid] || []).filter((r) => !isWarm(r)).map((r) => r.date))).sort();
+  if (!ds.length) return { cur: 0, best: 0 };
+  let run = 0;
+  let best = 0;
+  let prev = null;
+  ds.forEach((d) => {
+    if (prev && daysBetween(prev, d) - 1 >= STREAK_BREAK) run = 0;
+    run += 1;
+    if (run > best) best = run;
+    prev = d;
+  });
+  const idle = daysBetween(prev, today()) - 1;
+  return { cur: idle >= STREAK_BREAK ? 0 : run, best };
 }
 
 /* plan, schedule, status */
@@ -769,7 +811,19 @@ async function logSet(name, wDisp, reps, rpe, type) {
   derive();
   state.drafts[state.logDate + '|' + k] = { w: String(wDisp), r: String(reps), rpe: rpe == null ? '' : String(rpe), type };
   if (type !== 'warmup' && prev !== null && w > prev + 0.0005) toast('NEW PR: ' + name + ' ' + fmtW(wDisp) + ' ' + unit(), 'pr');
-  if (type !== 'warmup' && state.restOn) startRest();
+  let pr = false;
+  if (type !== 'warmup' && prev !== null && w > prev + 0.0005) pr = true;
+  const partner = type !== 'warmup' ? ssPartner(state.logDate, k) : null;
+  let skipRest = false;
+  if (partner) {
+    const cnt = (kk) => state.mine.filter((x) => x.date === state.logDate && key(x.exercise) === kk && !isWarm(x)).length;
+    if (cnt(k) > cnt(partner)) {
+      skipRest = true;
+      state.focusEx = partner;
+      if (!pr) toast('Superset: now ' + (sessionOrder(state.logDate).find((o) => o.k === partner) || { name: 'your partner lift' }).name);
+    }
+  }
+  if (type !== 'warmup' && state.restOn && !skipRest) startRest();
   render();
 }
 
@@ -1039,6 +1093,111 @@ async function applyTemplate(t) {
   toast(t.name + ' set up');
 }
 
+/* exercise settings, supersets, housekeeping, backup */
+
+async function saveExPref(name, patch) {
+  const me = state.me.id;
+  const k = key(name);
+  const cur = state.exMap[k] || { profile_id: me, key: k, note: '', rep_min: null, rep_max: null, jump: null };
+  const row = Object.assign({}, cur, patch);
+  const body = { profile_id: me, key: k, note: row.note || '', rep_min: row.rep_min || null, rep_max: row.rep_max || null, jump: row.jump || null };
+  const res = await db.from('exercise_settings').upsert(body, { onConflict: 'profile_id,key' });
+  if (res.error) { toast(res.error.message + ' (run setup5.sql?)', 'err'); return false; }
+  state.exSettings = state.exSettings.filter((x) => !(x.profile_id === me && x.key === k)).concat([body]);
+  derive();
+  render();
+  return true;
+}
+
+function loadSupersets() {
+  let o = null;
+  try { o = JSON.parse(lsGet('gym_ss_' + state.me.id)); } catch (e) { o = null; }
+  state.ss = o && typeof o === 'object' ? o : {};
+}
+function saveSupersets() {
+  const cutoff = addDays(today(), -30);
+  Object.keys(state.ss).forEach((d) => { if (d < cutoff || !state.ss[d].length) delete state.ss[d]; });
+  lsSet('gym_ss_' + state.me.id, JSON.stringify(state.ss));
+}
+function ssPartner(date, k) {
+  const pairs = state.ss[date] || [];
+  for (let i = 0; i < pairs.length; i += 1) {
+    if (pairs[i][0] === k) return pairs[i][1];
+    if (pairs[i][1] === k) return pairs[i][0];
+  }
+  return null;
+}
+function setSuperset(date, a, b) {
+  const pairs = (state.ss[date] || []).filter((p) => p.indexOf(a) < 0 && (b === null || p.indexOf(b) < 0));
+  if (b !== null) pairs.push([a, b]);
+  state.ss[date] = pairs;
+  saveSupersets();
+  render();
+}
+
+async function renameExercise(oldKey, newName) {
+  const me = state.me.id;
+  const nn = newName.trim();
+  if (!nn) { toast('Enter a name', 'err'); return false; }
+  const names = Array.from(new Set(state.mine.filter((r) => key(r.exercise) === oldKey).map((r) => r.exercise)));
+  const known = myExercises().find((m) => m.k === key(nn) && m.k !== oldKey);
+  const target = known ? known.name : nn;
+  for (let i = 0; i < names.length; i += 1) {
+    const res = await db.from('workouts').update({ exercise: target }).eq('profile_id', me).eq('exercise', names[i]);
+    if (res.error) { toast(res.error.message, 'err'); return false; }
+  }
+  state.workouts.forEach((w) => { if (w.profile_id === me && key(w.exercise) === oldKey) w.exercise = target; });
+  const rs = state.routines.filter((r) => r.profile_id === me && r.exercises.some((x) => key(x) === oldKey));
+  for (let i = 0; i < rs.length; i += 1) {
+    const seen = new Set();
+    const ex = [];
+    rs[i].exercises.forEach((x) => {
+      const nx = key(x) === oldKey ? target : x;
+      if (!seen.has(key(nx))) { seen.add(key(nx)); ex.push(nx); }
+    });
+    const res = await db.from('routines').update({ exercises: ex }).eq('id', rs[i].id).eq('profile_id', me);
+    if (!res.error) rs[i].exercises = ex;
+  }
+  const nk = key(target);
+  const pref = state.exMap[oldKey];
+  if (pref && nk !== oldKey) {
+    if (!state.exMap[nk]) {
+      const body = Object.assign({}, pref, { key: nk });
+      await db.from('exercise_settings').upsert(body, { onConflict: 'profile_id,key' });
+      state.exSettings.push(body);
+    }
+    await db.from('exercise_settings').delete().eq('profile_id', me).eq('key', oldKey);
+    state.exSettings = state.exSettings.filter((x) => !(x.profile_id === me && x.key === oldKey));
+  }
+  derive();
+  render();
+  toast(known ? 'Merged into ' + target : 'Renamed');
+  return true;
+}
+
+async function deleteAccount() {
+  const res = await db.from('profiles').delete().eq('id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  logout();
+  return true;
+}
+
+async function backupAll() {
+  toast('Building backup...');
+  try { await loadAll(); } catch (e) { toast('Could not reach the database', 'err'); return; }
+  const muscles = Object.keys(state.muscles).map((k) => ({ key: k, muscle: state.muscles[k] }));
+  const data = {
+    app: 'gym', exported_at: new Date().toISOString(), note: 'PIN hashes are not included',
+    tables: {
+      profiles: state.profiles, workouts: state.workouts, bodyweights: state.bodyweights, routines: state.routines,
+      schedule_days: state.schedule, schedule_overrides: state.overrides, schedule_settings: state.settings,
+      kudos: state.kudos, challenges: state.challenges, exercise_muscles: muscles, exercise_settings: state.exSettings
+    }
+  };
+  downloadText('gym_backup_' + today() + '.json', JSON.stringify(data, null, 1), 'application/json');
+  toast('Backup downloaded');
+}
+
 /* rest timer (fixed 3:00 after every working set) */
 
 let restTimer = null;
@@ -1142,7 +1301,7 @@ function openMuscle(name) {
   const cur = muscleOf(name);
   openSheet([
     sheetHead('Muscle group'),
-    h('div', { class: 'muted', style: 'margin-bottom:10px', text: name + '. The whole crew shares this setting.' }),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: name + '. Everyone shares this setting.' }),
     h('div', { class: 'chiprow' }, MUSCLES.map((m) => h('button', {
       class: 'chip' + (m === cur ? ' on' : ''),
       onclick: () => { closeSheet(); setMuscle(name, m); },
@@ -1429,8 +1588,8 @@ function csvCell(v) {
   const s = v == null ? '' : String(v);
   return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
 }
-function downloadText(name, text) {
-  const blob = new Blob([text], { type: 'text/csv' });
+function downloadText(name, text, mime) {
+  const blob = new Blob([text], { type: mime || 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -1464,9 +1623,179 @@ function openAccount() {
       h('button', { class: 'btn ghost', onclick: exportWorkouts, text: 'workouts CSV' }),
       h('button', { class: 'btn ghost', onclick: exportWeights, text: 'bodyweight CSV' })
     ),
+    h('h3', { text: 'BACKUP' }),
+    h('button', { class: 'btn ghost', onclick: backupAll, text: 'download full backup (JSON)' }),
+    h('div', { class: 'muted', style: 'margin-top:6px', text: 'Everyone\'s data in one file. PIN hashes are left out.' }),
+    h('h3', { text: 'EXERCISES' }),
+    h('button', { class: 'btn ghost', onclick: openExerciseManager, text: 'rename or merge exercises' }),
     h('h3', { text: 'ACCOUNT' }),
-    h('button', { class: 'btn ghost', onclick: () => { closeSheet(); logout(); }, text: 'switch user' })
+    h('div', { class: 'btnrow' },
+      h('button', { class: 'btn ghost', onclick: () => { closeSheet(); logout(); }, text: 'switch user' }),
+      h('button', { class: 'btn ghost danger', onclick: openDeleteAccount, text: 'delete account' })
+    )
   ]);
+}
+
+/* exercise notes, rep range, jump size */
+
+function openExSettings(name) {
+  const k = key(name);
+  const pref = state.exMap[k] || {};
+  const note = h('textarea', { class: 'field', rows: '2', placeholder: 'note (e.g. seat at 4, narrow grip)' });
+  note.value = pref.note || '';
+  const lo = h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', placeholder: 'min reps', value: pref.rep_min ? String(pref.rep_min) : '' });
+  const hi = h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', placeholder: 'max reps', value: pref.rep_max ? String(pref.rep_max) : '' });
+  const jump = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: 'jump (' + unit() + ')', value: pref.jump ? fmtW(toDisp(pref.jump)) : '' });
+  const save = h('button', { class: 'btn', text: 'save' });
+  save.addEventListener('click', async () => {
+    const a = parseInt(lo.value, 10);
+    const b = parseInt(hi.value, 10);
+    const both = Number.isFinite(a) && Number.isFinite(b);
+    if ((Number.isFinite(a) || Number.isFinite(b)) && (!both || b < a)) { toast('Set both reps, max at least min', 'err'); return; }
+    const j = parseFloat(jump.value);
+    const ok = await saveExPref(name, {
+      note: note.value.trim(),
+      rep_min: both ? a : null,
+      rep_max: both ? b : null,
+      jump: Number.isFinite(j) && j > 0 ? fromDisp(j) : null
+    });
+    if (ok) closeSheet();
+  });
+  openSheet([
+    sheetHead(name),
+    h('h3', { text: 'NOTE' }), note,
+    h('h3', { text: 'REP RANGE' }),
+    h('div', { class: 'muted', style: 'margin-bottom:8px', text: 'Add reps until you hit the top, then add weight and drop back to the bottom. Leave empty for the default rule.' }),
+    h('div', { class: 'inrow' }, lo, hi),
+    h('h3', { text: 'WEIGHT JUMP' }),
+    h('div', { class: 'muted', style: 'margin-bottom:8px', text: 'How much to add when it is time to go up. Empty uses 5 ' + unit() + ' style defaults for big lifts and smaller for the rest.' }),
+    jump, save
+  ]);
+}
+
+/* supersets */
+
+function openSuperset(name, k) {
+  const date = state.logDate;
+  const cur = ssPartner(date, k);
+  const others = sessionOrder(date).filter((o) => o.k !== k);
+  const body = [sheetHead('Superset: ' + name),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Pair it with another exercise from this session. The rest timer then starts after both are done, and the app points you to the partner after each set.' })];
+  if (!others.length) body.push(h('div', { class: 'muted', text: 'Add another exercise to this session first.' }));
+  others.forEach((o) => body.push(h('button', {
+    class: 'prow',
+    onclick: () => { closeSheet(); setSuperset(date, k, o.k); },
+    text: o.name + (cur === o.k ? '  (current)' : '')
+  })));
+  if (cur) body.push(h('button', { class: 'btn ghost', style: 'margin-top:10px', onclick: () => { closeSheet(); setSuperset(date, k, null); }, text: 'remove superset' }));
+  openSheet(body);
+}
+
+/* finish workout */
+
+function openFinish(date) {
+  const rows = state.mine.filter((r) => r.date === date).sort(byTime);
+  const work = rows.filter((r) => !isWarm(r));
+  if (!work.length) { toast('Log a working set first', 'err'); return; }
+  const sets = work.reduce((s, r) => s + r.sets, 0);
+  const volume = work.reduce((s, r) => s + vol(r), 0);
+  const groups = [];
+  work.forEach((r) => {
+    const k = key(r.exercise);
+    let g = groups.find((x) => x.k === k);
+    if (!g) { g = { k, name: r.exercise, n: 0, vol: 0, top: r }; groups.push(g); }
+    g.n += r.sets;
+    g.vol += vol(r);
+    if (Number(r.weight) > Number(g.top.weight) + 0.0005) g.top = r;
+  });
+  let dur = null;
+  if (date === today() && rows.length > 1) {
+    const ts = rows.map((r) => new Date(r.created_at).getTime());
+    const span = Math.max.apply(null, ts) - Math.min.apply(null, ts);
+    if (span > 0 && span < 6 * 3600 * 1000) dur = Math.max(1, Math.round(span / 60000));
+  }
+  const prs = work.filter((r) => state.prIds.has(r.id));
+
+  /* compare with the earlier day that had the most lifts in common */
+  const keys = new Set(groups.map((g) => g.k));
+  const prevDays = {};
+  state.mine.forEach((r) => {
+    if (isWarm(r) || r.date >= date) return;
+    (prevDays[r.date] = prevDays[r.date] || []).push(r);
+  });
+  let cmp = null;
+  Object.keys(prevDays).sort().forEach((d) => {
+    const shared = new Set(prevDays[d].map((r) => key(r.exercise)).filter((k) => keys.has(k)));
+    if (shared.size / keys.size < 0.5) return;
+    if (!cmp || shared.size >= cmp.n) cmp = { d, n: shared.size, shared };
+  });
+  let cmpLine = null;
+  if (cmp) {
+    const before = prevDays[cmp.d].filter((r) => cmp.shared.has(key(r.exercise))).reduce((s, r) => s + vol(r), 0);
+    const now = work.filter((r) => cmp.shared.has(key(r.exercise))).reduce((s, r) => s + vol(r), 0);
+    if (before > 0) {
+      const pct = Math.round(((now - before) / before) * 100);
+      cmpLine = (pct >= 0 ? '+' : '') + pct + '% volume vs ' + shortDate(cmp.d) + ' (same lifts)';
+    }
+  }
+  const atGym = statusOf(myProfile()).atGym;
+  const done = h('button', { class: 'btn', text: atGym ? 'done, check me out' : 'done' });
+  done.addEventListener('click', async () => {
+    closeSheet();
+    state.rest = null;
+    stopRestTimer();
+    if (atGym) await toggleAtGym();
+  });
+  openSheet([
+    sheetHead('Workout done'),
+    h('div', { class: 'tiles three' },
+      h('div', { class: 'tile' }, h('b', { text: String(sets) }), h('span', { text: 'SETS' })),
+      h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
+      h('div', { class: 'tile' }, h('b', { text: dur ? dur + 'm' : String(groups.length) }), h('span', { text: dur ? 'DURATION' : 'EXERCISES' }))
+    ),
+    cmpLine ? h('div', { class: 'hint' }, cmpLine) : null,
+    prs.length ? h('h3', { text: 'PERSONAL RECORDS' }) : null,
+    prs.map((r) => h('div', { class: 'lrow' }, h('div', { class: 'l', text: r.exercise }), h('div', { class: 'r' }, dw(r.weight) + ' ' + unit() + ' × ' + r.reps, h('small', { text: 'new PR' })))),
+    h('h3', { text: 'EXERCISES' }),
+    groups.map((g) => h('div', { class: 'lrow' },
+      h('div', { class: 'l', text: g.name }),
+      h('div', { class: 'r' }, g.n + (g.n === 1 ? ' set' : ' sets'), h('small', { text: 'top ' + dw(g.top.weight) + ' × ' + g.top.reps }))
+    )),
+    h('div', { style: 'margin-top:14px' }, done)
+  ]);
+}
+
+/* rename / merge exercises, delete account */
+
+function openExerciseManager() {
+  const list = myExercises();
+  const body = [sheetHead('Your exercises'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Tap one to rename it across all your history. Renaming to the name of another exercise merges them.' })];
+  if (!list.length) body.push(h('div', { class: 'muted', text: 'Nothing logged yet.' }));
+  list.forEach((e) => body.push(h('button', { class: 'prow', onclick: () => openRenameEx(e) }, e.name, h('em', { text: e.n + ' sets' }))));
+  openSheet(body);
+}
+
+function openRenameEx(e) {
+  const inp = h('input', { class: 'field', value: e.name });
+  const go = h('button', { class: 'btn', text: 'rename or merge' });
+  go.addEventListener('click', async () => { if (await renameExercise(e.k, inp.value)) openExerciseManager(); });
+  inp.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') go.click(); });
+  openSheet([sheetHead('Rename ' + e.name), inp, go,
+    h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: openExerciseManager, text: 'back' })]);
+  setTimeout(() => inp.select(), 60);
+}
+
+function openDeleteAccount() {
+  const inp = h('input', { class: 'field', placeholder: 'type ' + state.me.username + ' to confirm', autocomplete: 'off', autocapitalize: 'none' });
+  const go = h('button', { class: 'btn ghost danger', text: 'delete everything' });
+  go.addEventListener('click', async () => {
+    if (inp.value.trim().toLowerCase() !== state.me.username.toLowerCase()) { toast('Type your username to confirm', 'err'); return; }
+    if (await deleteAccount()) { closeSheet(); toast('Account deleted'); }
+  });
+  openSheet([sheetHead('Delete account'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'This permanently removes your profile, sets, weigh-ins, routines and kudos for everyone. It cannot be undone. Download a backup first if you want a copy.' }),
+    inp, go]);
 }
 
 /* LOG tab */
@@ -1481,12 +1810,14 @@ function exCard(name, k, rows) {
 
   card.appendChild(h('div', { class: 'exhead' },
     h('div', null,
-      h('div', { class: 'exname', text: name }),
+      h('div', { class: 'exname' }, name, ssPartner(state.logDate, k) ? h('span', { class: 'sstag', text: 'SUPERSET' }) : null),
       h('button', { class: 'mtag', onclick: () => openMuscle(name), text: muscleOf(name).toUpperCase() })
     ),
     best !== null ? h('span', { class: 'prtag', text: 'PR ' + dw(best) }) : null
   ));
 
+  const pf = state.exMap[k];
+  if (pf && pf.note) card.appendChild(h('div', { class: 'exnote', onclick: () => openExSettings(name), text: 'Note: ' + pf.note }));
   const est = comp ? est1RM(k) : null;
   if (est || sug) {
     const box = h('div', { class: 'hint' });
@@ -1566,13 +1897,14 @@ function exCard(name, k, rows) {
   card.appendChild(typeBar);
   card.appendChild(h('div', { class: 'tools' },
     h('button', { onclick: () => openPlates(parseFloat(wIn.value) || 0), text: 'plates' }),
-    h('button', { onclick: () => openWarmup(name, parseFloat(wIn.value) || (sug ? sug.w : 0)), text: 'warmup sets' })
+    h('button', { onclick: () => openWarmup(name, parseFloat(wIn.value) || (sug ? sug.w : 0)), text: 'warmup sets' }),
+    h('button', { onclick: () => openSuperset(name, k), text: ssPartner(state.logDate, k) ? 'superset on' : 'superset' }),
+    h('button', { onclick: () => openExSettings(name), text: pf && (pf.rep_min || pf.jump || pf.note) ? 'settings *' : 'settings' })
   ));
   return card;
 }
 
-function renderLog() {
-  const date = state.logDate;
+function sessionOrder(date) {
   const rows = state.mine.filter((r) => r.date === date).sort(byTime);
   const order = [];
   rows.forEach((r) => {
@@ -1585,6 +1917,24 @@ function renderLog() {
       if (!order.some((o) => o.k === k)) order.push({ k, name: n });
     });
   }
+  /* supersets sit next to each other */
+  const placed = new Set();
+  const out = [];
+  order.forEach((o) => {
+    if (placed.has(o.k)) return;
+    out.push(o);
+    placed.add(o.k);
+    const pk = ssPartner(date, o.k);
+    const po = pk ? order.find((x) => x.k === pk) : null;
+    if (po && !placed.has(pk)) { out.push(po); placed.add(pk); }
+  });
+  return out;
+}
+
+function renderLog() {
+  const date = state.logDate;
+  const rows = state.mine.filter((r) => r.date === date).sort(byTime);
+  const order = sessionOrder(date);
   const work = rows.filter((r) => !isWarm(r));
   const sets = work.reduce((s, r) => s + r.sets, 0);
   const volume = work.reduce((s, r) => s + vol(r), 0);
@@ -1649,6 +1999,7 @@ function renderLog() {
   }
   order.forEach((o) => wrap.appendChild(exCard(o.name, o.k, rows.filter((r) => key(r.exercise) === o.k))));
   wrap.appendChild(h('button', { class: 'addex', onclick: () => openPicker(), text: '+ ADD EXERCISE' }));
+  if (work.length) wrap.appendChild(h('button', { class: 'btn', style: 'margin-top:12px', onclick: () => openFinish(date), text: 'FINISH WORKOUT' }));
   return wrap;
 }
 
@@ -2037,7 +2388,7 @@ function renderProgress() {
   return wrap;
 }
 
-/* CREW tab */
+/* HOMIES tab */
 
 function rangeStart(range) {
   if (range === 'week') return weekStart(today());
@@ -2107,10 +2458,41 @@ function statusPills(p) {
   return out;
 }
 
+function recapCard() {
+  const lw = addDays(weekStart(today()), -7);
+  const le = addDays(lw, 6);
+  const st = crewStats(lw, le);
+  const sessions = st.reduce((s, x) => s + x.days, 0);
+  if (!sessions) return null;
+  const top = (field) => st.slice().sort((a, b) => b[field] - a[field])[0];
+  const card = h('div', { class: 'card' });
+  const row = (label, p, val) => card.appendChild(h('div', { class: 'lrow' },
+    h('div', { class: 'l' }, h('small', { text: label }), h('div', { class: 'lbname' }, avatar(p, 20), p.username)),
+    h('div', { class: 'r', text: val })
+  ));
+  const d = top('days');
+  row('MOST SESSIONS', d.p, d.days + (d.days === 1 ? ' session' : ' sessions'));
+  const v = top('volume');
+  if (v.volume > 0) row('MOST VOLUME', v.p, fmt(toDisp(v.volume)) + ' ' + unit());
+  const pr = top('prs');
+  if (pr.prs > 0) row('MOST PRS', pr.p, pr.prs + (pr.prs === 1 ? ' PR' : ' PRs'));
+  const sk = state.profiles.map((p) => Object.assign({ p }, streakOf(p.id))).sort((a, b) => b.cur - a.cur)[0];
+  if (sk && sk.cur > 1) row('LONGEST STREAK', sk.p, sk.cur + ' days');
+  const quiet = state.profiles.filter((p) => statusOf(p).slacking);
+  if (quiet.length) {
+    card.appendChild(h('div', { class: 'lrow' },
+      h('div', { class: 'l' }, h('small', { text: 'WENT QUIET' }), h('div', { text: quiet.map((p) => p.username).join(', ') })),
+      h('div', { class: 'r' }, h('span', { class: 'pill slack', text: 'SLACKING' }))
+    ));
+  }
+  card.appendChild(h('div', { class: 'muted', style: 'margin-top:8px;font-size:10px', text: sessions + ' sessions and ' + fmt(toDisp(st.reduce((s, x) => s + x.volume, 0))) + ' ' + unit() + ' moved by the homies' }));
+  return h('div', null, h('h2', null, 'Last week', h('small', { text: shortDate(lw).toUpperCase() + ' TO ' + shortDate(le).toUpperCase() })), card);
+}
+
 function renderCrew() {
   const wrap = h('div', { class: 'fade' });
-  wrap.appendChild(h('div', { class: 'eyebrow', text: 'CREW' }));
-  wrap.appendChild(h('h1', null, 'The ', h('span', { class: 'accent', text: 'squad' })));
+  wrap.appendChild(h('div', { class: 'eyebrow', text: 'HOMIES' }));
+  wrap.appendChild(h('h1', null, 'The ', h('span', { class: 'accent', text: 'homies' })));
 
   const meP = myProfile();
   const meSt = statusOf(meP);
@@ -2122,7 +2504,13 @@ function renderCrew() {
     stCard.appendChild(h('div', { class: 'lrow' },
       h('div', { class: 'l' },
         h('div', { class: 'lbname' }, avatar(p, 24), p.username),
-        plan.routine ? h('small', { text: 'Today: ' + plan.routine.name }) : null
+        (() => {
+          const bits = [];
+          if (plan.routine) bits.push('Today: ' + plan.routine.name);
+          const sk = streakOf(p.id);
+          if (sk.cur > 0) bits.push('streak ' + sk.cur);
+          return bits.length ? h('small', { text: bits.join(' · ') }) : null;
+        })()
       ),
       h('div', { class: 'r' }, statusPills(p))
     ));
@@ -2140,6 +2528,9 @@ function renderCrew() {
     h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(wk.reduce((s, x) => s + x.volume, 0))) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
     h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.prs, 0)) }), h('span', { text: 'PRS THIS WEEK' }))
   ));
+
+  const recap = recapCard();
+  if (recap) wrap.appendChild(recap);
 
   /* challenges */
   const t = today();
@@ -2187,12 +2578,19 @@ function renderCrew() {
   /* leaderboard */
   wrap.appendChild(h('h2', null, 'Leaderboard'));
   const lbCard = h('div', { class: 'card' });
-  lbCard.appendChild(seg([['week', 'this week'], ['month', 'this month'], ['all', 'all time']], state.crewRange, (v) => { state.crewRange = v; render(); }));
-  lbCard.appendChild(seg([['volume', 'volume'], ['sets', 'sets'], ['days', 'days'], ['prs', 'PRs']], state.crewMetric, (v) => { state.crewMetric = v; render(); }));
   const M = state.crewMetric;
-  const rows = crewStats(rangeStart(state.crewRange)).sort((a, b) => b[M] - a[M]);
-  const mx = rows.length ? Math.max(rows[0][M], 1) : 1;
-  rows.forEach((x, i) => lbCard.appendChild(lbRow(i, x.p, metricText(M, x[M]), null, x[M] / mx)));
+  if (M !== 'streak') lbCard.appendChild(seg([['week', 'this week'], ['month', 'this month'], ['all', 'all time']], state.crewRange, (v) => { state.crewRange = v; render(); }));
+  lbCard.appendChild(seg([['volume', 'volume'], ['sets', 'sets'], ['days', 'days'], ['prs', 'PRs'], ['streak', 'streak']], M, (v) => { state.crewMetric = v; render(); }));
+  if (M === 'streak') {
+    const rows = state.profiles.map((p) => Object.assign({ p }, streakOf(p.id))).sort((a, b) => (b.cur - a.cur) || (b.best - a.best));
+    const mx = rows.length ? Math.max(rows[0].cur, 1) : 1;
+    rows.forEach((x, i) => lbCard.appendChild(lbRow(i, x.p, x.cur + (x.cur === 1 ? ' day' : ' days'), 'best ' + x.best, x.cur / mx)));
+    lbCard.appendChild(h('div', { class: 'muted', style: 'margin-top:8px;font-size:10px', text: 'Counts training days in a row. 3 days without a workout breaks it.' }));
+  } else {
+    const rows = crewStats(rangeStart(state.crewRange)).sort((a, b) => b[M] - a[M]);
+    const mx = rows.length ? Math.max(rows[0][M], 1) : 1;
+    rows.forEach((x, i) => lbCard.appendChild(lbRow(i, x.p, metricText(M, x[M]), null, x[M] / mx)));
+  }
   wrap.appendChild(lbCard);
 
   /* volume trend */
@@ -2430,7 +2828,7 @@ async function showLogin() {
       res.data.forEach((p) => {
         chips.appendChild(h('button', { class: 'member', onclick: () => { $('user').value = p.username; $('pin').focus(); } }, avatar(p, 22), p.username));
       });
-      box.appendChild(h('div', { class: 'eyebrow', text: 'THE CREW' }));
+      box.appendChild(h('div', { class: 'eyebrow', text: 'THE HOMIES' }));
       box.appendChild(chips);
     }
   } catch (e) { /* offline, skip the member chips */ }
@@ -2463,6 +2861,7 @@ async function enter(profile) {
   state.loaded = false;
   state.error = '';
   state.restOn = lsGet('gym_rest_on') !== '0';
+  loadSupersets();
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('who').replaceChildren(avatar(profile, 20), h('span', { text: profile.username }));
