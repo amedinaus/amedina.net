@@ -95,25 +95,25 @@
   .tile small { display: block; font-size: 10px; color: #484f58; }
 
   .chiprow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
-  .chip { font-size: 11px; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 3px 12px; }
+  .chip { font-size: 11px; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 7px 14px; }
   .chip:hover { border-color: #39d353; color: #39d353; }
   .chip.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
   .datepill { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 6px 8px; font-size: 12px; margin-top: 4px; }
   .seg { display: flex; background: #0d1117; border: 1px solid #21262d; border-radius: 9px; padding: 3px; gap: 2px; margin-bottom: 10px; }
-  .seg button { flex: 1; font-size: 11px; padding: 6px 4px; border-radius: 6px; color: #8b949e; letter-spacing: 0.04em; }
+  .seg button { flex: 1; font-size: 11px; padding: 9px 4px; border-radius: 6px; color: #8b949e; letter-spacing: 0.04em; }
   .seg button.on { background: #161b22; color: #39d353; }
   select.pick { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 9px 10px; font-size: 12px; margin-bottom: 10px; outline: none; }
   select.pick:focus { border-color: #39d353; }
 
   .exhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
   .exname { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.3; }
-  .mtag { font-size: 9px; letter-spacing: 0.08em; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 0 8px; margin-top: 2px; }
+  .mtag { font-size: 9px; letter-spacing: 0.08em; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 4px 10px; margin-top: 2px; }
   .mtag:hover { border-color: #39d353; color: #39d353; }
   .prtag { font-size: 10px; color: #e6a817; border: 1px solid rgba(230,168,23,0.35); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
   .prior { font-size: 11px; color: #6e7681; margin: 4px 0 6px; }
   .hint { background: rgba(88,217,245,0.05); border: 1px solid rgba(88,217,245,0.2); border-radius: 8px; padding: 8px 10px; margin: 6px 0 8px; font-size: 11px; color: #8b949e; line-height: 1.7; }
   .hint b { color: #58d9f5; font-weight: 500; }
-  .setrow { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #161b22; cursor: pointer; }
+  .setrow { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 11px 0; border-top: 1px solid #161b22; cursor: pointer; }
   .setrow:hover .val { color: #39d353; }
   .idx { width: 22px; height: 22px; border-radius: 50%; background: #161b22; color: #8b949e; font-size: 10px; display: flex; align-items: center; justify-content: center; }
   .setrow .val { font-size: 14px; font-weight: 500; transition: color 0.2s; }
@@ -133,13 +133,16 @@
   .addbtn { height: 44px; border-radius: 8px; background: #39d353; color: #000; font-size: 22px; font-weight: 700; transition: all 0.2s; }
   .addbtn:hover { background: #4ef570; box-shadow: 0 0 18px rgba(57,211,83,0.3); }
   .typebar { display: flex; gap: 4px; margin-top: 8px; }
-  .typebar button { flex: 1; font-size: 10px; padding: 5px 0; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
+  .morebtn { display: block; width: 100%; text-align: center; margin-top: 10px; font-size: 11px; letter-spacing: 0.06em; color: #8b949e; border: 1px solid #21262d; border-radius: 8px; padding: 9px 0; }
+  .morebtn:hover { border-color: #39d353; color: #39d353; }
+  .morepanel { margin-top: 6px; }
+  .typebar button { flex: 1; font-size: 11px; padding: 10px 0; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
   .typebar button.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
   .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
   .exnote { font-size: 11px; color: #e6a817; margin-bottom: 8px; cursor: pointer; }
   .sstag { font-size: 9px; letter-spacing: 0.08em; color: #58d9f5; border: 1px solid rgba(88,217,245,0.3); border-radius: 99px; padding: 0 8px; margin-left: 6px; }
   textarea.field { resize: vertical; font-family: inherit; }
-  .tools button { font-size: 10px; color: #8b949e; border: 1px solid #21262d; border-radius: 6px; padding: 4px 10px; }
+  .tools button { font-size: 11px; color: #8b949e; border: 1px solid #21262d; border-radius: 8px; padding: 10px 14px; }
   .tools button:hover { border-color: #39d353; color: #39d353; }
   .addex { width: 100%; padding: 15px; border: 1px dashed #30363d; border-radius: 12px; color: #8b949e; font-size: 12px; letter-spacing: 0.08em; transition: all 0.2s; }
   .addex:hover { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.04); }
@@ -369,10 +372,10 @@ const state = {
   me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], settings: [], exSettings: [], exMap: {}, ss: {}, overrides: [], kudos: [], challenges: [], muscles: {},
   mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, setMap: {}, ovMap: {},
   unit: 'lb',
-  tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, focusEx: '',
-  crewRange: 'week', crewMetric: 'volume', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
+  tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, more: {}, focusEx: '',
+  crewTab: 'today', crewRange: 'week', crewMetric: 'volume', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
   calMonth: '', calWho: 'all', planWeek: '', chat: null, autopost: true, prPosted: {}, restDay: '',
-  restOn: true, rest: null, pending: [], loaded: false, error: ''
+  restOn: true, restSound: true, keepAwake: true, rest: null, pending: [], loaded: false, error: ''
 };
 
 /* tiny helpers */
@@ -1237,6 +1240,63 @@ async function backupAll() {
 
 /* rest timer (fixed 3:00 after every working set) */
 
+let audioCtx = null;
+function unlockAudio() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!audioCtx) audioCtx = new AC();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) { /* no audio, that is fine */ }
+}
+/* three quick beeps, the last one higher */
+function beep() {
+  if (!state.restSound) return;
+  try {
+    unlockAudio();
+    const ctx = audioCtx;
+    if (!ctx) return;
+    const t0 = ctx.currentTime + 0.02;
+    [0, 0.3, 0.6].forEach((d, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = i === 2 ? 1175 : 880;
+      g.gain.setValueAtTime(0.0001, t0 + d);
+      g.gain.exponentialRampToValueAtTime(0.4, t0 + d + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.24);
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start(t0 + d);
+      o.stop(t0 + d + 0.27);
+    });
+  } catch (e) { /* ignore */ }
+}
+function toggleSound() {
+  state.restSound = !state.restSound;
+  lsSet('gym_rest_sound', state.restSound ? '1' : '0');
+  if (state.restSound) beep();
+  render();
+}
+
+/* keep the screen on while the app is open, so the rest timer can beep */
+let wakeLock = null;
+const wakeOK = () => typeof navigator !== 'undefined' && 'wakeLock' in navigator;
+async function applyWake() {
+  if (!wakeOK()) return;
+  try {
+    const want = state.keepAwake && !!state.me && !document.hidden;
+    if (want && !wakeLock) {
+      const lock = await navigator.wakeLock.request('screen');
+      wakeLock = lock;
+      lock.addEventListener('release', () => { if (wakeLock === lock) wakeLock = null; });
+    } else if (!want && wakeLock) {
+      const lock = wakeLock;
+      wakeLock = null;
+      await lock.release();
+    }
+  } catch (e) { wakeLock = null; }
+}
 let restTimer = null;
 function startRest() {
   state.rest = { end: Date.now() + REST_SECS * 1000, total: REST_SECS * 1000 };
@@ -1264,6 +1324,7 @@ function tickRest() {
     state.rest = null;
     stopRestTimer();
     toast('Rest over. Next set.');
+    beep();
     try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
     return;
   }
@@ -2219,18 +2280,34 @@ function exCard(name, k, rows) {
   TYPES.forEach((t) => {
     const b = h('button', {
       class: t[0] === type ? 'on' : '',
-      onclick: () => { type = t[0]; Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b)); saveDraft(); },
+      onclick: () => {
+        type = t[0];
+        Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b));
+        moreBtn.textContent = moreLabel();
+        saveDraft();
+      },
       text: t[1]
     });
     typeBar.appendChild(b);
   });
-  card.appendChild(typeBar);
-  card.appendChild(h('div', { class: 'tools' },
-    h('button', { onclick: () => openPlates(parseFloat(wIn.value) || 0), text: 'plates' }),
-    h('button', { onclick: () => openWarmup(name, parseFloat(wIn.value) || (sug ? sug.w : 0)), text: 'warmup sets' }),
-    h('button', { onclick: () => openSuperset(name, k), text: ssPartner(state.logDate, k) ? 'superset on' : 'superset' }),
-    h('button', { onclick: () => openExSettings(name), text: pf && (pf.rep_min || pf.jump || pf.note) ? 'settings *' : 'settings' })
-  ));
+  const hasSS = !!ssPartner(state.logDate, k);
+  const moreLabel = () => (type !== 'working' ? 'more: ' + type : (hasSS ? 'more: superset' : 'more'));
+  const panel = h('div', { class: 'morepanel' + (state.more[dk] ? '' : ' hidden') },
+    typeBar,
+    h('div', { class: 'tools' },
+      h('button', { onclick: () => openPlates(parseFloat(wIn.value) || 0), text: 'plates' }),
+      h('button', { onclick: () => openWarmup(name, parseFloat(wIn.value) || (sug ? sug.w : 0)), text: 'warmup sets' }),
+      h('button', { onclick: () => openSuperset(name, k), text: hasSS ? 'superset on' : 'superset' }),
+      h('button', { onclick: () => openExSettings(name), text: pf && (pf.rep_min || pf.jump || pf.note) ? 'settings *' : 'settings' })
+    )
+  );
+  const moreBtn = h('button', {
+    class: 'morebtn',
+    onclick: () => { state.more[dk] = !state.more[dk]; panel.classList.toggle('hidden', !state.more[dk]); },
+    text: moreLabel()
+  });
+  card.appendChild(moreBtn);
+  card.appendChild(panel);
   return card;
 }
 
@@ -2283,6 +2360,7 @@ function renderLog() {
   ));
   wrap.appendChild(h('div', { class: 'chiprow' },
     h('button', { class: 'chip' + (state.restOn ? ' on' : ''), onclick: toggleRest, text: state.restOn ? 'rest timer 3:00' : 'rest timer off' }),
+    h('button', { class: 'chip' + (state.restSound ? ' on' : ''), onclick: toggleSound, text: state.restSound ? 'sound on' : 'sound off' }),
     h('button', { class: 'chip', onclick: () => openPlates(0), text: 'plate calculator' })
   ));
 
@@ -2824,6 +2902,10 @@ function renderCrew() {
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'HOMIES' }));
   wrap.appendChild(h('h1', null, 'The ', h('span', { class: 'accent', text: 'homies' })));
 
+  wrap.appendChild(seg([['today', 'today'], ['boards', 'boards'], ['activity', 'activity']], state.crewTab, (v) => { state.crewTab = v; render(); window.scrollTo(0, 0); }));
+  const sections = { today: h('div'), boards: h('div'), activity: h('div') };
+  let sink = sections.today;
+
   const meP = myProfile();
   const meSt = statusOf(meP);
 
@@ -2849,25 +2931,26 @@ function renderCrew() {
     class: 'btn ' + (meSt.atGym ? 'ghost' : ''), style: 'margin-top:10px', onclick: toggleAtGym,
     text: meSt.atGym ? 'check out of the gym' : "I'm at the gym"
   }));
-  wrap.appendChild(stCard);
+  sink.appendChild(stCard);
 
   /* tiles */
   const wk = crewStats(weekStart(today()));
-  wrap.appendChild(h('div', { class: 'tiles three', style: 'margin-top:12px' },
+  sink.appendChild(h('div', { class: 'tiles three', style: 'margin-top:12px' },
     h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.days, 0)) }), h('span', { text: 'SESSIONS THIS WEEK' })),
     h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(wk.reduce((s, x) => s + x.volume, 0))) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
     h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.prs, 0)) }), h('span', { text: 'PRS THIS WEEK' }))
   ));
 
   const recap = recapCard();
-  if (recap) wrap.appendChild(recap);
+  if (recap) sink.appendChild(recap);
 
   /* challenges */
+  sink = sections.boards;
   const t = today();
   const ym = t.slice(0, 7);
   const mStart = ym + '-01';
   const mEnd = ym + '-' + String(daysInMonth(ym)).padStart(2, '0');
-  wrap.appendChild(h('h2', null, 'Challenges'));
+  sink.appendChild(h('h2', null, 'Challenges'));
   const chCard = h('div', { class: 'card' });
   const mv = crewStats(mStart, mEnd).sort((a, b) => b.volume - a.volume);
   const mtop = mv.length ? Math.max(mv[0].volume, 1) : 1;
@@ -2903,10 +2986,10 @@ function renderCrew() {
     chCard.appendChild(box);
   });
   chCard.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:12px', onclick: openChallengeSheet, text: '+ new lift race' }));
-  wrap.appendChild(chCard);
+  sink.appendChild(chCard);
 
   /* leaderboard */
-  wrap.appendChild(h('h2', null, 'Leaderboard'));
+  sink.appendChild(h('h2', null, 'Leaderboard'));
   const lbCard = h('div', { class: 'card' });
   const M = state.crewMetric;
   if (M !== 'streak') lbCard.appendChild(seg([['week', 'this week'], ['month', 'this month'], ['all', 'all time']], state.crewRange, (v) => { state.crewRange = v; render(); }));
@@ -2921,12 +3004,12 @@ function renderCrew() {
     const mx = rows.length ? Math.max(rows[0][M], 1) : 1;
     rows.forEach((x, i) => lbCard.appendChild(lbRow(i, x.p, metricText(M, x[M]), null, x[M] / mx)));
   }
-  wrap.appendChild(lbCard);
+  sink.appendChild(lbCard);
 
   /* volume trend */
   const weeks = lastWeeks(8);
-  wrap.appendChild(h('h2', null, 'Weekly volume', h('small', { text: unit().toUpperCase() })));
-  wrap.appendChild(h('div', { class: 'card' }, chartBox({
+  sink.appendChild(h('h2', null, 'Weekly volume', h('small', { text: unit().toUpperCase() })));
+  sink.appendChild(h('div', { class: 'card' }, chartBox({
     type: 'line',
     data: {
       labels: weeks.map(shortDate),
@@ -2948,7 +3031,7 @@ function renderCrew() {
     names[k].n += 1;
   });
   const exs = Object.values(names).sort((a, b) => b.n - a.n);
-  wrap.appendChild(h('h2', null, 'Lift board', h('small', { text: 'BEST ESTIMATED 1RM' })));
+  sink.appendChild(h('h2', null, 'Lift board', h('small', { text: 'BEST ESTIMATED 1RM' })));
   const lift = h('div', { class: 'card' });
   if (!exs.length) {
     lift.appendChild(h('div', { class: 'muted', text: 'No working sets logged yet.' }));
@@ -2972,10 +3055,11 @@ function renderCrew() {
       lift.appendChild(lbRow(i, x.p, val, sub, frac));
     });
   }
-  wrap.appendChild(lift);
+  sink.appendChild(lift);
 
   /* body weights */
-  wrap.appendChild(h('h2', null, 'Weigh-ins'));
+  sink = sections.activity;
+  sink.appendChild(h('h2', null, 'Weigh-ins'));
   const bwCard = h('div', { class: 'card' });
   let anyBw = false;
   state.profiles.forEach((p) => {
@@ -2992,10 +3076,10 @@ function renderCrew() {
     ));
   });
   if (!anyBw) bwCard.appendChild(h('div', { class: 'muted', text: 'Nobody has logged a weigh-in yet. Use the Body tab.' }));
-  wrap.appendChild(bwCard);
+  sink.appendChild(bwCard);
 
   /* feed */
-  wrap.appendChild(h('h2', null, 'Recent PRs', h('small', { text: 'GIVE SOME KUDOS' })));
+  sink.appendChild(h('h2', null, 'Recent PRs', h('small', { text: 'GIVE SOME KUDOS' })));
   const feed = h('div', { class: 'card' });
   const prs = state.workouts.filter((r) => state.prIds.has(r.id)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1)).slice(0, 12);
   if (!prs.length) feed.appendChild(h('div', { class: 'muted', text: 'No PRs yet. Beat your first weight on any lift and it shows up here.' }));
@@ -3017,9 +3101,11 @@ function renderCrew() {
         : h('button', { class: 'kudos' + (mineK ? ' on' : ''), onclick: () => toggleKudos(r.id), text: '★ ' + (set.size || 'kudos') })
     ));
   });
-  wrap.appendChild(feed);
+  sink.appendChild(feed);
+  wrap.appendChild(sections[state.crewTab] || sections.today);
   return wrap;
 }
+
 
 /* BODY tab */
 
@@ -3191,12 +3277,14 @@ async function enter(profile) {
   state.loaded = false;
   state.error = '';
   state.restOn = lsGet('gym_rest_on') !== '0';
+  state.restSound = lsGet('gym_rest_sound') !== '0';
   loadSupersets();
   chatInit();
   $('login').classList.add('hidden');
   $('app').classList.remove('hidden');
   $('who').replaceChildren(avatar(profile, 20), h('span', { text: profile.username }));
   render();
+  applyWake();
   await refreshData(true);
 }
 
@@ -3212,6 +3300,7 @@ function logout() {
   destroyCharts();
   closeSheet();
   chatStop();
+  applyWake();
   $('pin').value = '';
   showLogin();
 }
@@ -3228,8 +3317,10 @@ document.addEventListener('keydown', (e) => {
   if (!$('sheet').classList.contains('hidden')) closeSheet();
   else if (state.chat && state.chat.open) closeChat();
 });
-document.addEventListener('visibilitychange', () => { if (!document.hidden && state.me) { refreshData(false); pollChat(); } });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.me) { refreshData(false); pollChat(); if (state.rest) tickRest(); }
+  applyWake(); });
 $('chatBtn').addEventListener('click', openChat);
+['pointerdown', 'keydown', 'touchend'].forEach((ev) => document.addEventListener(ev, unlockAudio, { passive: true }));
 
 (function boot() {
   let saved = null;
