@@ -1837,10 +1837,10 @@ function openFinish(date) {
     if (Number(r.weight) > Number(g.top.weight) + 0.0005) g.top = r;
   });
   let dur = null;
-  if (date === today() && rows.length > 1) {
-    const ts = rows.map((r) => new Date(r.created_at).getTime());
-    const span = Math.max.apply(null, ts) - Math.min.apply(null, ts);
-    if (span > 0 && span < 6 * 3600 * 1000) dur = Math.max(1, Math.round(span / 60000));
+  const sst = sessionStats(date);
+  if (sst) {
+    const span = sst.last - sst.first;
+    if (span >= 60000 && span < 6 * 3600 * 1000) dur = Math.max(1, Math.round(span / 60000));
   }
   const prs = work.filter((r) => state.prIds.has(r.id));
 
@@ -1895,6 +1895,7 @@ function openFinish(date) {
       h('div', { class: 'tile' }, h('b', { text: dur ? dur + 'm' : String(groups.length) }), h('span', { text: dur ? 'DURATION' : 'EXERCISES' }))
     ),
     cmpLine ? h('div', { class: 'hint' }, cmpLine) : null,
+    dur && sst ? h('div', { class: 'hint' }, 'Started ' + new Date(sst.first).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · ' + clockText(dur) + (sst.avgGap ? ' · ' + (sst.avgGap / 60000).toFixed(1) + 'm between sets' : '')) : null,
     prs.length ? h('h3', { text: 'PERSONAL RECORDS' }) : null,
     prs.map((r) => h('div', { class: 'lrow' }, h('div', { class: 'l', text: r.exercise }), h('div', { class: 'r' }, dw(r.weight) + ' ' + unit() + ' × ' + r.reps, h('small', { text: 'new PR' })))),
     h('h3', { text: 'EXERCISES' }),
@@ -2723,6 +2724,53 @@ async function backupMine() {
   toast('Your backup downloaded');
 }
 
+
+/* session timer (worked out from set timestamps, nothing stored) */
+
+function localDay(ms) {
+  const d = new Date(ms);
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function clockText(mins) {
+  const m = Math.max(0, Math.round(mins));
+  return m >= 60 ? Math.floor(m / 60) + 'h ' + String(m % 60).padStart(2, '0') + 'm' : m + 'm';
+}
+
+function sessionStats(date) {
+  const rows = state.mine.filter((r) => r.date === date).sort(byTime);
+  const ts = rows.map((r) => new Date(r.created_at).getTime()).filter((t) => Number.isFinite(t) && localDay(t) === date).sort((a, b) => a - b);
+  if (!ts.length) return null;
+  const first = ts[0];
+  const last = ts[ts.length - 1];
+  const gaps = [];
+  for (let i = 1; i < ts.length; i++) {
+    const g = ts[i] - ts[i - 1];
+    if (g >= 20000 && g <= 10 * 60000) gaps.push(g);
+  }
+  const avgGap = gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : null;
+  const live = date === today() && Date.now() - last < 90 * 60000;
+  const end = live ? Date.now() : last;
+  const span = end - first;
+  return { first, last, live, mins: span >= 60000 ? span / 60000 : null, avgGap };
+}
+
+function sessionLine(date) {
+  const st = sessionStats(date);
+  if (!st || st.mins === null || st.mins > 6 * 60) return null;
+  const t = new Date(st.first).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  let txt = (st.live ? 'Session ' : 'Lasted ') + clockText(st.mins) + ' · started ' + t;
+  if (st.avgGap) txt += ' · ' + (st.avgGap / 60000).toFixed(1) + 'm between sets';
+  return { txt, live: st.live };
+}
+
+setInterval(() => {
+  const el = document.getElementById('sessClock');
+  if (!el || document.hidden) return;
+  const sl = sessionLine(state.logDate);
+  if (sl) el.textContent = sl.txt;
+}, 30000);
+
 /* LOG tab */
 
 function exCard(name, k, rows) {
@@ -2964,6 +3012,8 @@ function renderLog() {
     h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
     h('div', { class: 'tile' }, h('b', { text: String(order.length) }), h('span', { text: 'EXERCISES' }))
   ));
+  const sline = sessionLine(date);
+  if (sline) wrap.appendChild(h('div', { class: 'hint', id: sline.live ? 'sessClock' : null, text: sline.txt }));
   if (!order.length) {
     wrap.appendChild(emptyCard('Empty session', 'Add an exercise, enter weight, reps and RPE, hit +. The 3:00 rest timer starts on its own.'));
   }
