@@ -137,6 +137,12 @@
   .rpe { color: #e6a817; font-size: 11px; font-weight: 400; margin-left: 6px; }
   .badge { font-size: 9px; letter-spacing: 0.06em; border-radius: 99px; padding: 0 7px; border: 1px solid; margin-left: 6px; font-weight: 400; }
   .badge.warm { color: #58d9f5; border-color: rgba(88,217,245,0.4); }
+  .dropchain { font-size: 11px; color: #a78bfa; font-weight: 400; margin-top: 2px; }
+  .dropsbox { margin-top: 8px; padding: 8px; border: 1px solid rgba(167,139,250,0.3); border-radius: 8px; }
+  .dropsbox .droprow { display: grid; grid-template-columns: 18px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .dropsbox .arrow { color: #a78bfa; text-align: center; }
+  .dropsbox input { width: 100%; box-sizing: border-box; }
+  .adddrop { font-size: 11px; color: #a78bfa; padding: 8px 0; width: 100%; border: 1px dashed rgba(167,139,250,0.4); border-radius: 6px; }
   .badge.drop { color: #a78bfa; border-color: rgba(167,139,250,0.4); }
   .badge.fail { color: #f87171; border-color: rgba(248,113,113,0.4); }
   .star { color: #e6a817; margin-left: 4px; }
@@ -389,7 +395,7 @@ const state = {
   mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, setMap: {}, ovMap: {},
   unit: 'lb',
   tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, more: {}, focusEx: '',
-  crewTab: 'today', crewRange: 'week', crewMetric: 'volume', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
+  crewTab: 'today', crewRange: 'week', crewMetric: 'days', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
   calMonth: '', calWho: 'all', planWeek: '', chat: null, autopost: true, prPosted: {}, restDay: '',
   restOn: true, restSound: true, keepAwake: true, rest: null, pending: [], loaded: false, error: ''
 };
@@ -466,6 +472,12 @@ const isWarm = (r) => r.set_type === 'warmup';
 const qual = (r) => !isWarm(r) && r.set_type !== 'drop' && r.reps >= 1 && r.reps <= 10 && Number(r.weight) > 0;
 const vol = (r) => (isWarm(r) ? 0 : Number(r.weight) * r.reps * r.sets);
 const setN = (r) => (isWarm(r) ? 0 : r.sets);
+const dropText = (drops) => (Array.isArray(drops) ? drops.map((d) => dw(d.w) + '×' + d.r).join(' → ') : '');
+const parseDrops = (txt) => {
+  const out = [];
+  String(txt || '').replace(/(\d+(?:\.\d+)?)\s*[x×*]\s*(\d+)/gi, (m, w, r) => { out.push({ w: fromDisp(parseFloat(w)), r: parseInt(r, 10) }); return m; });
+  return out;
+};
 const typeClass = (t) => (t === 'warmup' ? 'warm' : t === 'drop' ? 'drop' : 'fail');
 
 /* Epley estimate. With an RPE, reps left in the tank are added to the reps done. */
@@ -583,10 +595,17 @@ async function fetchAll(table, cols, build) {
   return all;
 }
 
+/* drops column is new (setup8.sql); fall back to the old column list if it is missing */
+async function fetchWorkouts() {
+  const base = 'id, profile_id, date, exercise, weight, reps, sets, notes, rpe, set_type, created_at';
+  try { return await fetchAll('workouts', base + ', drops', (q) => q.order('created_at').order('id')); }
+  catch (e) { return fetchAll('workouts', base, (q) => q.order('created_at').order('id')); }
+}
+
 async function loadAll() {
   const r = await Promise.all([
     fetchAll('profiles', 'id, username, unit, at_gym_until, created_at', (q) => q.order('created_at').order('id')),
-    fetchAll('workouts', 'id, profile_id, date, exercise, weight, reps, sets, notes, rpe, set_type, created_at', (q) => q.order('created_at').order('id')),
+    fetchWorkouts(),
     fetchAll('bodyweights', 'id, profile_id, date, weight, created_at', (q) => q.order('date').order('id')),
     fetchAll('routines', 'id, profile_id, name, exercises, created_at', (q) => q.order('created_at').order('id')),
     fetchAll('schedule_days', 'profile_id, weekday, routine_id', (q) => q.order('profile_id').order('weekday')),
@@ -620,7 +639,8 @@ function normSet(w) {
   return Object.assign({}, w, {
     set_type: w.set_type || 'working',
     rpe: w.rpe == null ? null : Number(w.rpe),
-    sets: w.sets || 1
+    sets: w.sets || 1,
+    drops: Array.isArray(w.drops) && w.drops.length ? w.drops : null
   });
 }
 
@@ -855,18 +875,18 @@ function statusOf(p) {
 
 /* actions */
 
-async function logSet(name, wDisp, reps, rpe, type) {
+async function logSet(name, wDisp, reps, rpe, type, drops) {
   if (!Number.isFinite(wDisp) || wDisp < 0 || !Number.isFinite(reps) || reps < 1) { toast('Enter weight and reps', 'err'); return; }
   const k = key(name);
   const w = fromDisp(wDisp);
   const prev = bestWeight(k);
-  const res = await db.from('workouts').insert({
-    profile_id: state.me.id, exercise: name, weight: w, reps, sets: 1, date: state.logDate, rpe, set_type: type
-  }).select().single();
+  const row = { profile_id: state.me.id, exercise: name, weight: w, reps, sets: 1, date: state.logDate, rpe, set_type: type };
+  if (type === 'drop' && drops && drops.length) row.drops = drops;
+  const res = await db.from('workouts').insert(row).select().single();
   if (res.error) { toast(res.error.message, 'err'); return; }
   state.workouts.push(normSet(res.data));
   derive();
-  state.drafts[state.logDate + '|' + k] = { w: String(wDisp), r: String(reps), rpe: rpe == null ? '' : String(rpe), type };
+  state.drafts[state.logDate + '|' + k] = { w: String(wDisp), r: String(reps), rpe: rpe == null ? '' : String(rpe), type, drops: [] };
   if (type !== 'warmup' && prev !== null && w > prev + 0.0005) toast('NEW PR: ' + name + ' ' + fmtW(wDisp) + ' ' + unit(), 'pr');
   let pr = false;
   if (type !== 'warmup' && prev !== null && w > prev + 0.0005) pr = true;
@@ -1525,11 +1545,13 @@ function openEditSet(r) {
     RPE_OPTS.map((v) => h('option', { value: String(v), selected: r.rpe != null && Number(r.rpe) === v, text: 'RPE ' + v }))
   );
   const nIn = h('input', { class: 'field', placeholder: 'note (optional)', value: r.notes || '' });
+  const dIn = h('input', { class: 'field', placeholder: 'dropped to, e.g. 155x6, 135x8', value: Array.isArray(r.drops) ? r.drops.map((d) => dw(d.w) + 'x' + d.r).join(', ') : '' });
+  const dWrap = h('div', { class: type === 'drop' ? '' : 'hidden' }, h('h3', { text: 'DROPPED TO (' + unit().toUpperCase() + 'xREPS)' }), dIn);
   const typeBar = h('div', { class: 'typebar', style: 'margin-bottom:12px' });
   TYPES.forEach((t) => {
     const b = h('button', {
       class: t[0] === type ? 'on' : '',
-      onclick: () => { type = t[0]; Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b)); },
+      onclick: () => { type = t[0]; Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b)); dWrap.classList.toggle('hidden', type !== 'drop'); },
       text: t[1]
     });
     typeBar.appendChild(b);
@@ -1544,6 +1566,7 @@ function openEditSet(r) {
       set_type: type, notes: nIn.value.trim() || null
     };
     if (sIn) patch.sets = Math.max(1, parseInt(sIn.value, 10) || 1);
+    patch.drops = type === 'drop' ? (parseDrops(dIn.value).length ? parseDrops(dIn.value) : null) : null;
     if (await editSet(r.id, patch)) closeSheet();
   });
   const del = h('button', { class: 'btn ghost danger', text: 'delete set' });
@@ -1561,6 +1584,7 @@ function openEditSet(r) {
     h('h3', { text: 'EFFORT AND TYPE' }),
     rpeSel,
     typeBar,
+    dWrap,
     nIn,
     h('div', { class: 'btnrow' }, save, del)
   ]);
@@ -1720,10 +1744,10 @@ function downloadText(name, text, mime) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function exportWorkouts() {
-  const head = ['date', 'exercise', 'weight_' + unit(), 'reps', 'sets', 'rpe', 'type', 'notes'];
+  const head = ['date', 'exercise', 'weight_' + unit(), 'reps', 'sets', 'rpe', 'type', 'drops', 'notes'];
   const lines = [head.join(',')];
   state.mine.slice().sort(byTime).forEach((r) => {
-    lines.push([r.date, r.exercise, dw(r.weight), r.reps, r.sets, r.rpe, r.set_type, r.notes].map(csvCell).join(','));
+    lines.push([r.date, r.exercise, dw(r.weight), r.reps, r.sets, r.rpe, r.set_type, dropText(r.drops).replace(/ → /g, ' > '), r.notes].map(csvCell).join(','));
   });
   downloadText('workouts_' + state.me.username + '.csv', lines.join('\n') + '\n');
 }
@@ -1857,13 +1881,20 @@ function openFinish(date) {
     if (shared.size / keys.size < 0.5) return;
     if (!cmp || shared.size >= cmp.n) cmp = { d, n: shared.size, shared };
   });
-  let cmpLine = null;
+  const cmpLines = [];
   if (cmp) {
-    const before = prevDays[cmp.d].filter((r) => cmp.shared.has(key(r.exercise))).reduce((s, r) => s + vol(r), 0);
-    const now = work.filter((r) => cmp.shared.has(key(r.exercise))).reduce((s, r) => s + vol(r), 0);
-    if (before > 0) {
-      const pct = Math.round(((now - before) / before) * 100);
-      cmpLine = (pct >= 0 ? '+' : '') + pct + '% volume vs ' + shortDate(cmp.d) + ' (same lifts)';
+    const topW = (rs, k) => rs.filter((r) => key(r.exercise) === k).reduce((m, r) => Math.max(m, Number(r.weight)), 0);
+    Array.from(cmp.shared).slice(0, 5).forEach((k) => {
+      const nowW = topW(work, k);
+      const beforeW = topW(prevDays[cmp.d], k);
+      const name = (work.find((r) => key(r.exercise) === k) || {}).exercise || k;
+      const diff = nowW - beforeW;
+      cmpLines.push(name + ' top set ' + dw(nowW) + ' ' + unit() + (Math.abs(diff) < 0.0005 ? ' (same)' : ' (' + (diff > 0 ? '+' : '-') + dw(Math.abs(diff)) + ')'));
+    });
+    const prevMins = minsByDay(state.me.id)[cmp.d];
+    if (dur && prevMins) {
+      const dm = Math.round(dur - prevMins);
+      cmpLines.push('Time ' + clockText(dur) + ' vs ' + clockText(prevMins) + ' on ' + shortDate(cmp.d) + (Math.abs(dm) < 2 ? ' (same)' : dm < 0 ? ' (' + clockText(-dm) + ' faster)' : ' (' + clockText(dm) + ' slower)'));
     }
   }
   const atGym = statusOf(myProfile()).atGym;
@@ -1891,10 +1922,10 @@ function openFinish(date) {
     sheetHead('Workout done'),
     h('div', { class: 'tiles three' },
       h('div', { class: 'tile' }, h('b', { text: String(sets) }), h('span', { text: 'SETS' })),
-      h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
-      h('div', { class: 'tile' }, h('b', { text: dur ? dur + 'm' : String(groups.length) }), h('span', { text: dur ? 'DURATION' : 'EXERCISES' }))
+      h('div', { class: 'tile' }, h('b', { text: dur ? clockText(dur) : '-' }), h('span', { text: 'DURATION' })),
+      h('div', { class: 'tile' }, h('b', { text: String(prs.length) }), h('span', { text: 'NEW PRS' }))
     ),
-    cmpLine ? h('div', { class: 'hint' }, cmpLine) : null,
+    cmpLines.length ? h('div', { class: 'hint' }, cmpLines.map((t) => h('div', { text: t }))) : null,
     dur && sst ? h('div', { class: 'hint' }, 'Started ' + new Date(sst.first).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · ' + clockText(dur) + (sst.avgGap ? ' · ' + (sst.avgGap / 60000).toFixed(1) + 'm between sets' : '')) : null,
     prs.length ? h('h3', { text: 'PERSONAL RECORDS' }) : null,
     prs.map((r) => h('div', { class: 'lrow' }, h('div', { class: 'l', text: r.exercise }), h('div', { class: 'r' }, dw(r.weight) + ' ' + unit() + ' × ' + r.reps, h('small', { text: 'new PR' })))),
@@ -2122,7 +2153,7 @@ function msgBody(m) {
     const ex = Array.isArray(me.exercises) ? me.exercises : [];
     return h('div', { class: 'cardmsg' },
       h('small', { text: 'WORKOUT DONE' + (me.date ? ', ' + shortDate(me.date).toUpperCase() : '') }),
-      h('b', { text: me.sets + ' sets, ' + fmt(toDisp(me.volume)) + ' ' + unit() + (me.dur ? ', ' + me.dur + 'm' : '') }),
+      h('b', { text: me.sets + ' sets' + (me.dur ? ', ' + clockText(me.dur) : '') + (Array.isArray(me.prs) && me.prs.length ? ', ' + me.prs.length + (me.prs.length === 1 ? ' PR' : ' PRs') : '') }),
       ex.slice(0, 7).map((e) => h('div', { class: 'cmline' }, h('span', { text: e.name }), h('span', { text: dw(e.w) + '×' + e.r + (e.n > 1 ? ' (' + e.n + ')' : '') }))),
       Array.isArray(me.prs) && me.prs.length ? h('div', { class: 'cmprs', text: 'PRs: ' + me.prs.map((p) => p.name).join(', ') }) : null
     );
@@ -2311,7 +2342,7 @@ function lastRoutineSession(r, before) {
 async function repeatSession(sess) {
   const rows = sess.rows.map((w) => ({
     profile_id: state.me.id, exercise: w.exercise, weight: w.weight, reps: w.reps, sets: w.sets,
-    date: state.logDate, rpe: null, set_type: w.set_type
+    date: state.logDate, rpe: null, set_type: w.set_type, drops: w.drops || null
   }));
   const res = await db.from('workouts').insert(rows).select();
   if (res.error) { toast(res.error.message, 'err'); return; }
@@ -2478,7 +2509,7 @@ function badgesFor(pid) {
   const days = trainDays(pid).length;
   const sk = streakOf(pid);
   const prs = rows.filter((r) => state.prIds.has(r.id)).length;
-  const volume = rows.reduce((s, r) => s + vol(r), 0);
+  const mins = Object.values(minsByDay(pid)).reduce((a, b) => a + b, 0);
   const heavy = (re, not) => rows.reduce((m, r) => (re.test(r.exercise) && !(not && not.test(r.exercise)) ? Math.max(m, Number(r.weight)) : m), 0);
   const owner = {};
   state.workouts.forEach((w) => { owner[w.id] = w.profile_id; });
@@ -2502,10 +2533,10 @@ function badgesFor(pid) {
   add('PR hunter', 'Set your first PR', prs, 1);
   add('PR machine', 'Set 10 PRs', prs, 10);
   add('PR legend', 'Set 50 PRs', prs, 50);
-  const volFmt = (v) => fmt(toDisp(v)) + ' ' + unit();
-  add('Mover', 'Move 50,000 lb in total', volume, 50000, volFmt);
-  add('Hauler', 'Move 250,000 lb in total', volume, 250000, volFmt);
-  add('Titan', 'Move 1,000,000 lb in total', volume, 1000000, volFmt);
+  const hrFmt = (v) => Math.round(v / 60) + 'h';
+  add('Clocked in', 'Train 10 hours in total', mins, 600, hrFmt);
+  add('Grinder', 'Train 50 hours in total', mins, 3000, hrFmt);
+  add('Lifer', 'Train 200 hours in total', mins, 12000, hrFmt);
   const wFmt = (v) => dw(v) + ' ' + unit();
   add('225 club', 'Bench press 225 lb', heavy(/bench press/i, /incline|decline|dumbbell/i), 225, wFmt);
   add('315 club', 'Squat 315 lb', heavy(/squat/i), 315, wFmt);
@@ -2535,7 +2566,7 @@ function openProfile(pid) {
   const st = statusOf(p);
   const sk = streakOf(pid);
   const rows = (state.byUser[pid] || []).filter((r) => !isWarm(r));
-  const volume = rows.reduce((s, r) => s + vol(r), 0);
+  const totalMins = Object.values(minsByDay(pid)).reduce((a, b) => a + b, 0);
   const prs = rows.filter((r) => state.prIds.has(r.id)).length;
   const best = {};
   rows.forEach((r) => {
@@ -2559,7 +2590,7 @@ function openProfile(pid) {
     h('div', { class: 'tiles' },
       h('div', { class: 'tile' }, h('b', { text: String(sk.cur) }), h('span', { text: 'DAY STREAK' }), h('small', { text: 'best ' + sk.best })),
       h('div', { class: 'tile' }, h('b', { text: String(trainDays(pid).length) }), h('span', { text: 'TRAINING DAYS' })),
-      h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'TOTAL VOLUME ' + unit().toUpperCase() })),
+      h('div', { class: 'tile' }, h('b', { text: hoursText(totalMins) }), h('span', { text: 'TIME TRAINED' })),
       h('div', { class: 'tile' }, h('b', { text: String(prs) }), h('span', { text: 'PRS' }), h('small', { text: earned + ' badges' }))
     )
   ];
@@ -2607,7 +2638,7 @@ function openH2H(aId, bId) {
     return {
       rows, cur: sk.cur, best: sk.best,
       days30: trainDays(p.id).filter((d) => d >= since).length,
-      vol30: rows.filter((r) => r.date >= since).reduce((s, r) => s + vol(r), 0),
+      mins30: minsIn(p.id, since),
       prs: rows.filter((r) => state.prIds.has(r.id)).length
     };
   };
@@ -2630,7 +2661,7 @@ function openH2H(aId, bId) {
   vs('Current streak', a.cur, b.cur, a.cur + 'd', b.cur + 'd');
   vs('Best streak', a.best, b.best, a.best + 'd', b.best + 'd');
   vs('Training days, 30d', a.days30, b.days30, String(a.days30), String(b.days30));
-  vs('Volume, 30d', a.vol30, b.vol30, fmt(toDisp(a.vol30)), fmt(toDisp(b.vol30)));
+  vs('Time trained, 30d', a.mins30, b.mins30, hoursText(a.mins30), hoursText(b.mins30));
   vs('Total PRs', a.prs, b.prs, String(a.prs), String(b.prs));
 
   const bestOf = (rows, k) => {
@@ -2761,15 +2792,61 @@ function sessionLine(date) {
   const t = new Date(st.first).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   let txt = (st.live ? 'Session ' : 'Lasted ') + clockText(st.mins) + ' · started ' + t;
   if (st.avgGap) txt += ' · ' + (st.avgGap / 60000).toFixed(1) + 'm between sets';
-  return { txt, live: st.live };
+  return { txt, live: st.live, mins: st.mins };
 }
 
 setInterval(() => {
   const el = document.getElementById('sessClock');
   if (!el || document.hidden) return;
   const sl = sessionLine(state.logDate);
-  if (sl) el.textContent = sl.txt;
+  if (sl) {
+    el.textContent = sl.txt;
+    const tile = document.getElementById('sessTile');
+    if (tile) tile.textContent = clockText(sl.mins);
+  }
 }, 30000);
+
+
+/* per person training minutes per day (first set to last set), memoised per rows array */
+const minsCache = {};
+function minsByDay(pid) {
+  const rows = state.byUser[pid] || [];
+  const c = minsCache[pid];
+  if (c && c.rows === rows && c.n === rows.length) return c.map;
+  const days = {};
+  rows.forEach((r) => {
+    const t = new Date(r.created_at).getTime();
+    if (!Number.isFinite(t) || localDay(t) !== r.date) return;
+    const d = days[r.date] = days[r.date] || { a: t, b: t };
+    if (t < d.a) d.a = t;
+    if (t > d.b) d.b = t;
+  });
+  const map = {};
+  Object.keys(days).forEach((k) => {
+    const span = days[k].b - days[k].a;
+    if (span >= 60000 && span <= 6 * 3600000) map[k] = span / 60000;
+  });
+  minsCache[pid] = { rows, n: rows.length, map };
+  return map;
+}
+
+function minsIn(pid, start, end) {
+  const m = minsByDay(pid);
+  return Object.keys(m).reduce((s, d) => (d >= start && (!end || d <= end) ? s + m[d] : s), 0);
+}
+
+function weeklyMins(pid, weeks) {
+  const m = {};
+  weeks.forEach((w) => { m[w] = 0; });
+  const by = minsByDay(pid);
+  Object.keys(by).forEach((d) => { const w = weekStart(d); if (w in m) m[w] += by[d]; });
+  return weeks.map((w) => Math.round(m[w]));
+}
+
+function hoursText(mins) {
+  if (!mins || mins < 1) return '-';
+  return mins >= 600 ? Math.round(mins / 60) + 'h' : clockText(mins);
+}
 
 /* LOG tab */
 
@@ -2816,8 +2893,8 @@ function exCard(name, k, rows) {
         h('span', { class: 'muted', style: 'font-size:10px', text: 'tap to repeat:' }),
         tappable.map((r) => h('button', {
           class: 'rchip',
-          onclick: () => logSet(name, toDisp(r.weight), r.reps, null, r.set_type === 'warmup' ? 'working' : r.set_type),
-          text: dw(r.weight) + '×' + r.reps
+          onclick: () => logSet(name, toDisp(r.weight), r.reps, null, r.set_type === 'warmup' ? 'working' : r.set_type, r.drops),
+          text: dw(r.weight) + '×' + r.reps + (r.drops ? ' ↓' : '')
         }))
       ));
     }
@@ -2834,6 +2911,7 @@ function exCard(name, k, rows) {
         r.sets > 1 ? h('u', { text: r.sets + ' sets' }) : null,
         r.rpe != null ? h('span', { class: 'rpe', text: '@' + r.rpe }) : null,
         r.set_type !== 'working' ? h('span', { class: 'badge ' + typeClass(r.set_type), text: r.set_type }) : null,
+        r.drops ? h('div', { class: 'dropchain', text: '↓ ' + dropText(r.drops) }) : null,
         state.prIds.has(r.id) ? h('span', { class: 'star', text: '★' }) : null
       ),
       h('span', { class: 'e1', text: qual(r) ? 'e1RM ' + fmt(toDisp(e1rm(w, r.reps, r.rpe))) : '' })
@@ -2855,8 +2933,25 @@ function exCard(name, k, rows) {
     h('option', { value: '', text: '-' }),
     RPE_OPTS.map((v) => h('option', { value: String(v), selected: String(v) === String(def.rpe), text: String(v) }))
   );
-  const saveDraft = () => { state.drafts[dk] = { w: wIn.value, r: rIn.value, rpe: rpeSel.value, type }; };
-  const go = () => logSet(name, parseFloat(wIn.value), parseInt(rIn.value, 10), rpeSel.value === '' ? null : parseFloat(rpeSel.value), type);
+  const dropRows = [];
+  const dropsBox = h('div', { class: 'dropsbox' + (type === 'drop' ? '' : ' hidden') });
+  const readDrops = () => dropRows.map((x) => ({ w: parseFloat(x.w.value), r: parseInt(x.r.value, 10) })).filter((d) => Number.isFinite(d.w) && d.w >= 0 && Number.isFinite(d.r) && d.r >= 1);
+  const saveDraft = () => { state.drafts[dk] = { w: wIn.value, r: rIn.value, rpe: rpeSel.value, type, drops: dropRows.map((x) => [x.w.value, x.r.value]) }; };
+  const addDropRow = (w, r) => {
+    const x = { w: h('input', { type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: 'dropped to (' + unit() + ')', value: w || '' }), r: h('input', { type: 'number', inputmode: 'numeric', min: '1', placeholder: 'reps', value: r || '' }) };
+    x.w.addEventListener('input', saveDraft);
+    x.r.addEventListener('input', saveDraft);
+    dropRows.push(x);
+    const row = h('div', { class: 'droprow' }, h('span', { class: 'arrow', text: '↓' }), x.w, x.r);
+    dropsBox.insertBefore(row, dropsBox.lastChild && dropsBox.lastChild.classList && dropsBox.lastChild.classList.contains('adddrop') ? dropsBox.lastChild : null);
+  };
+  dropsBox.appendChild(h('button', { class: 'adddrop', onclick: () => { addDropRow(); saveDraft(); }, text: '+ another drop' }));
+  (def.drops && def.drops.length ? def.drops : [['', '']]).forEach((d) => addDropRow(d[0], d[1]));
+  const go = () => {
+    const dr = type === 'drop' ? readDrops().map((d) => ({ w: fromDisp(d.w), r: d.r })) : null;
+    if (type === 'drop' && !dr.length) { toast('Enter what you dropped to (weight and reps)', 'err'); return; }
+    logSet(name, parseFloat(wIn.value), parseInt(rIn.value, 10), rpeSel.value === '' ? null : parseFloat(rpeSel.value), type, dr);
+  };
   wIn.addEventListener('input', saveDraft);
   rIn.addEventListener('input', saveDraft);
   rpeSel.addEventListener('change', saveDraft);
@@ -2868,6 +2963,7 @@ function exCard(name, k, rows) {
     h('label', { class: 'fld' }, h('span', { text: 'RPE' }), rpeSel),
     h('button', { class: 'addbtn', onclick: go, title: 'Log set', text: '+' })
   ));
+  card.appendChild(dropsBox);
 
   const typeBar = h('div', { class: 'typebar' });
   TYPES.forEach((t) => {
@@ -2875,6 +2971,7 @@ function exCard(name, k, rows) {
       class: t[0] === type ? 'on' : '',
       onclick: () => {
         type = t[0];
+        dropsBox.classList.toggle('hidden', type !== 'drop');
         Array.from(typeBar.children).forEach((c) => c.classList.toggle('on', c === b));
         moreBtn.textContent = moreLabel();
         saveDraft();
@@ -3009,7 +3106,7 @@ function renderLog() {
 
   wrap.appendChild(h('div', { class: 'tiles three' },
     h('div', { class: 'tile' }, h('b', { text: String(sets) }), h('span', { text: 'WORKING SETS' })),
-    h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
+    h('div', { class: 'tile' }, h('b', { id: 'sessTile', text: (() => { const ss = sessionStats(date); return ss && ss.mins !== null && ss.mins <= 360 ? clockText(ss.mins) : '-'; })() }), h('span', { text: 'TIME' })),
     h('div', { class: 'tile' }, h('b', { text: String(order.length) }), h('span', { text: 'EXERCISES' }))
   ));
   const sline = sessionLine(date);
@@ -3324,7 +3421,7 @@ function renderProgress() {
   wrap.appendChild(h('div', { class: 'tiles four' },
     h('div', { class: 'tile' }, h('b', { text: String(weekDays) }), h('span', { text: 'DAYS THIS WEEK' })),
     h('div', { class: 'tile' }, h('b', { text: String(weekStreak(work.concat(myActs))) }), h('span', { text: 'WEEK STREAK' }), h('small', { text: WEEK_GOAL + '+ days a week' })),
-    h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(thisWeek.reduce((s, r) => s + vol(r), 0))) }), h('span', { text: 'VOLUME THIS WEEK' })),
+    h('div', { class: 'tile' }, h('b', { text: hoursText(minsIn(state.me.id, ws)) }), h('span', { text: 'TIME THIS WEEK' })),
     h('div', { class: 'tile' }, h('b', { text: String(prs30) }), h('span', { text: 'PRS, 30 DAYS' }))
   ));
 
@@ -3332,14 +3429,14 @@ function renderProgress() {
   wrap.appendChild(h('div', { class: 'card' }, heatmap(work.concat(myActs.map((a) => ({ date: a.date, sets: 4 }))))));
 
   const weeks = lastWeeks(8);
-  const vals = weeklyVolume(work, weeks);
-  wrap.appendChild(h('h2', null, 'Weekly volume', h('small', { text: unit().toUpperCase() + ' MOVED' })));
+  const vals = weeklyMins(state.me.id, weeks);
+  wrap.appendChild(h('h2', null, 'Weekly training time', h('small', { text: 'MINUTES' })));
   wrap.appendChild(h('div', { class: 'card' }, chartBox({
     type: 'bar',
     data: { labels: weeks.map(shortDate), datasets: [{ data: vals, backgroundColor: vals.map((v, i) => (i === vals.length - 1 ? '#39d353' : '#196127')), borderRadius: 4, maxBarThickness: 30 }] },
     options: {
       responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => fmt(c.parsed.y) + ' ' + unit() } }) },
+      plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false, callbacks: { label: (c) => clockText(c.parsed.y) } }) },
       scales: axes({ beginAtZero: true })
     }
   }, 190)));
@@ -3443,7 +3540,7 @@ function crewStats(start, end) {
     const rows = (state.byUser[p.id] || []).filter((r) => !isWarm(r) && r.date >= start && (!end || r.date <= end));
     return {
       p,
-      volume: rows.reduce((s, r) => s + vol(r), 0),
+      mins: minsIn(p.id, start, end),
       sets: rows.reduce((s, r) => s + r.sets, 0),
       days: new Set(rows.map((r) => r.date).concat((state.actByUser[p.id] || []).filter((a) => a.date >= start && (!end || a.date <= end)).map((a) => a.date))).size,
       prs: rows.filter((r) => state.prIds.has(r.id)).length
@@ -3452,7 +3549,7 @@ function crewStats(start, end) {
 }
 
 function metricText(metric, v) {
-  if (metric === 'volume') return fmt(toDisp(v)) + ' ' + unit();
+  if (metric === 'time') return hoursText(v);
   if (metric === 'sets') return v + ' sets';
   if (metric === 'days') return v + (v === 1 ? ' day' : ' days');
   return v + (v === 1 ? ' PR' : ' PRs');
@@ -3514,8 +3611,8 @@ function recapCard() {
   ));
   const d = top('days');
   row('MOST SESSIONS', d.p, d.days + (d.days === 1 ? ' session' : ' sessions'));
-  const v = top('volume');
-  if (v.volume > 0) row('MOST VOLUME', v.p, fmt(toDisp(v.volume)) + ' ' + unit());
+  const v = top('mins');
+  if (v.mins > 0) row('MOST TIME', v.p, hoursText(v.mins));
   const pr = top('prs');
   if (pr.prs > 0) row('MOST PRS', pr.p, pr.prs + (pr.prs === 1 ? ' PR' : ' PRs'));
   const sk = state.profiles.map((p) => Object.assign({ p }, streakOf(p.id))).sort((a, b) => b.cur - a.cur)[0];
@@ -3527,7 +3624,7 @@ function recapCard() {
       h('div', { class: 'r' }, h('span', { class: 'pill slack', text: 'SLACKING' }))
     ));
   }
-  card.appendChild(h('div', { class: 'muted', style: 'margin-top:8px;font-size:10px', text: sessions + ' sessions and ' + fmt(toDisp(st.reduce((s, x) => s + x.volume, 0))) + ' ' + unit() + ' moved by the homies' }));
+  card.appendChild(h('div', { class: 'muted', style: 'margin-top:8px;font-size:10px', text: sessions + ' sessions and ' + hoursText(st.reduce((s, x) => s + x.mins, 0)) + ' trained by the homies' }));
   return h('div', null, h('h2', null, 'Last week', h('small', { text: shortDate(lw).toUpperCase() + ' TO ' + shortDate(le).toUpperCase() })), card);
 }
 
@@ -3571,7 +3668,7 @@ function renderCrew() {
   const wk = crewStats(weekStart(today()));
   sink.appendChild(h('div', { class: 'tiles three', style: 'margin-top:12px' },
     h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.days, 0)) }), h('span', { text: 'SESSIONS THIS WEEK' })),
-    h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(wk.reduce((s, x) => s + x.volume, 0))) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
+    h('div', { class: 'tile' }, h('b', { text: hoursText(wk.reduce((s, x) => s + x.mins, 0)) }), h('span', { text: 'TIME THIS WEEK' })),
     h('div', { class: 'tile' }, h('b', { text: String(wk.reduce((s, x) => s + x.prs, 0)) }), h('span', { text: 'PRS THIS WEEK' }))
   ));
 
@@ -3586,11 +3683,11 @@ function renderCrew() {
   const mEnd = ym + '-' + String(daysInMonth(ym)).padStart(2, '0');
   sink.appendChild(h('h2', null, 'Challenges'));
   const chCard = h('div', { class: 'card' });
-  const mv = crewStats(mStart, mEnd).sort((a, b) => b.volume - a.volume);
-  const mtop = mv.length ? Math.max(mv[0].volume, 1) : 1;
+  const mv = crewStats(mStart, mEnd).sort((a, b) => b.mins - a.mins);
+  const mtop = mv.length ? Math.max(mv[0].mins, 1) : 1;
   chCard.appendChild(h('div', { class: 'chal' },
-    h('div', { class: 'chalhead' }, h('b', { text: 'Monthly volume' }), h('small', { class: 'muted', text: monthLabel(ym) + ', ' + (daysInMonth(ym) - parseInt(t.slice(8), 10)) + ' days left' })),
-    mv.map((x, i) => lbRow(i, x.p, fmt(toDisp(x.volume)) + ' ' + unit(), x.days + ' sessions', x.volume / mtop))
+    h('div', { class: 'chalhead' }, h('b', { text: 'Monthly training time' }), h('small', { class: 'muted', text: monthLabel(ym) + ', ' + (daysInMonth(ym) - parseInt(t.slice(8), 10)) + ' days left' })),
+    mv.map((x, i) => lbRow(i, x.p, hoursText(x.mins), x.days + ' sessions', x.mins / mtop))
   ));
 
   const mine = state.challenges.slice().sort((a, b) => (a.end_date < b.end_date ? 1 : -1));
@@ -3625,9 +3722,10 @@ function renderCrew() {
   /* leaderboard */
   sink.appendChild(h('h2', null, 'Leaderboard'));
   const lbCard = h('div', { class: 'card' });
+  if (state.crewMetric === 'volume') state.crewMetric = 'days';
   const M = state.crewMetric;
   if (M !== 'streak') lbCard.appendChild(seg([['week', 'this week'], ['month', 'this month'], ['all', 'all time']], state.crewRange, (v) => { state.crewRange = v; render(); }));
-  lbCard.appendChild(seg([['volume', 'volume'], ['sets', 'sets'], ['days', 'days'], ['prs', 'PRs'], ['streak', 'streak']], M, (v) => { state.crewMetric = v; render(); }));
+  lbCard.appendChild(seg([['time', 'time'], ['sets', 'sets'], ['days', 'days'], ['prs', 'PRs'], ['streak', 'streak']], M, (v) => { state.crewMetric = v; render(); }));
   if (M === 'streak') {
     const rows = state.profiles.map((p) => Object.assign({ p }, streakOf(p.id))).sort((a, b) => (b.cur - a.cur) || (b.best - a.best));
     const mx = rows.length ? Math.max(rows[0].cur, 1) : 1;
@@ -3640,14 +3738,14 @@ function renderCrew() {
   }
   sink.appendChild(lbCard);
 
-  /* volume trend */
+  /* time trend */
   const weeks = lastWeeks(8);
-  sink.appendChild(h('h2', null, 'Weekly volume', h('small', { text: unit().toUpperCase() })));
+  sink.appendChild(h('h2', null, 'Weekly training time', h('small', { text: 'MINUTES' })));
   sink.appendChild(h('div', { class: 'card' }, chartBox({
     type: 'line',
     data: {
       labels: weeks.map(shortDate),
-      datasets: state.profiles.map((p) => lineSet(p.username, weeklyVolume((state.byUser[p.id] || []).filter((r) => !isWarm(r)), weeks), colorOf(p.id), { backgroundColor: 'transparent' }))
+      datasets: state.profiles.map((p) => lineSet(p.username, weeklyMins(p.id, weeks), colorOf(p.id), { backgroundColor: 'transparent' }))
     },
     options: {
       responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
