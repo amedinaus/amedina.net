@@ -26,6 +26,22 @@
   button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
   input, select { font-family: inherit; color: #e6edf3; color-scheme: dark; }
   .hidden { display: none !important; }
+  .tap { cursor: pointer; }
+  .tap:hover { color: #39d353; }
+  .rchip { font-size: 12px; border: 1px solid #30363d; border-radius: 8px; padding: 8px 12px; color: #c9d1d9; }
+  .rchip:hover { border-color: #39d353; color: #39d353; }
+  .btnstack { display: flex; flex-direction: column; gap: 6px; }
+  .goal { padding: 10px 0; border-top: 1px solid #161b22; }
+  .goal:first-child { border-top: none; padding-top: 0; }
+  .bdgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .bdg { border: 1px solid #21262d; border-radius: 8px; padding: 8px 10px; color: #484f58; }
+  .bdg b { display: block; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; }
+  .bdg small { display: block; font-size: 9px; margin-top: 2px; }
+  .bdg.on { border-color: rgba(230,168,23,0.5); color: #e6a817; background: rgba(230,168,23,0.06); }
+  .vsrow { display: grid; grid-template-columns: 1fr 70px 70px; gap: 6px; padding: 8px 0; border-top: 1px solid #161b22; font-size: 12px; align-items: center; }
+  .vsrow .c { text-align: right; }
+  .vsrow .c.win { color: #39d353; font-weight: 700; }
+  .vsrow.head { border-top: none; font-size: 10px; color: #8b949e; letter-spacing: 0.06em; }
   .topright { display: flex; align-items: center; gap: 8px; }
   .chatbtn { position: relative; width: 32px; height: 32px; border: 1px solid #21262d; border-radius: 99px; color: #8b949e; display: flex; align-items: center; justify-content: center; }
   .chatbtn:hover { border-color: #39d353; color: #39d353; }
@@ -369,7 +385,7 @@ const LIBRARY = [
 ];
 
 const state = {
-  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], settings: [], exSettings: [], exMap: {}, ss: {}, overrides: [], kudos: [], challenges: [], muscles: {},
+  me: null, profiles: [], workouts: [], bodyweights: [], routines: [], schedule: [], settings: [], exSettings: [], exMap: {}, ss: {}, activities: [], goals: [], actByUser: {}, loadedRoutine: null, overrides: [], kudos: [], challenges: [], muscles: {},
   mine: [], byUser: {}, prIds: new Set(), myWeights: [], bwLatest: {}, routineById: {}, kudosBy: {}, schMap: {}, setMap: {}, ovMap: {},
   unit: 'lb',
   tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, more: {}, focusEx: '',
@@ -579,7 +595,9 @@ async function loadAll() {
     fetchAll('challenges', 'id, creator_id, name, exercise, start_date, end_date, created_at', (q) => q.order('created_at').order('id')),
     fetchAll('exercise_muscles', 'key, muscle', (q) => q.order('key')),
     fetchAll('schedule_settings', 'profile_id, mode, cycle, pos, pos_date', (q) => q.order('profile_id')).catch(() => []),
-    fetchAll('exercise_settings', 'profile_id, key, note, rep_min, rep_max, jump', (q) => q.order('profile_id').order('key')).catch(() => [])
+    fetchAll('exercise_settings', 'profile_id, key, note, rep_min, rep_max, jump', (q) => q.order('profile_id').order('key')).catch(() => []),
+    fetchAll('activities', 'id, profile_id, date, kind, minutes, notes, created_at', (q) => q.order('created_at').order('id')).catch(() => []),
+    fetchAll('goals', 'id, profile_id, exercise, target, reps, deadline, created_at', (q) => q.order('created_at').order('id')).catch(() => [])
   ]);
   state.profiles = r[0];
   state.workouts = r[1].map(normSet);
@@ -593,6 +611,8 @@ async function loadAll() {
   r[8].forEach((m) => { state.muscles[m.key] = m.muscle; });
   state.settings = r[9].map((x) => Object.assign({}, x, { cycle: Array.isArray(x.cycle) ? x.cycle : [] }));
   state.exSettings = r[10];
+  state.activities = r[11];
+  state.goals = r[12];
   derive();
 }
 
@@ -635,6 +655,8 @@ function derive() {
   state.kudos.forEach((k) => { (state.kudosBy[k.workout_id] = state.kudosBy[k.workout_id] || new Set()).add(k.from_profile); });
   state.schMap = {};
   state.schedule.forEach((s) => { state.schMap[s.profile_id + '|' + s.weekday] = s; });
+  state.actByUser = {};
+  state.activities.forEach((a) => { (state.actByUser[a.profile_id] = state.actByUser[a.profile_id] || []).push(a); });
   state.exMap = {};
   state.exSettings.forEach((x) => { if (x.profile_id === me) state.exMap[x.key] = x; });
   state.setMap = {};
@@ -759,7 +781,7 @@ function suggestion(k, name, before) {
 /* streaks: a streak is the number of training days in a chain, broken by 3 days with no workout */
 const STREAK_BREAK = 3;
 function streakOf(pid) {
-  const ds = Array.from(new Set((state.byUser[pid] || []).filter((r) => !isWarm(r)).map((r) => r.date))).sort();
+  const ds = trainDays(pid);
   if (!ds.length) return { cur: 0, best: 0 };
   let run = 0;
   let best = 0;
@@ -814,13 +836,12 @@ function planFor(pid, date) {
 }
 
 function statusOf(p) {
-  const rows = (state.byUser[p.id] || []).filter((r) => !isWarm(r));
+  const days = trainDays(p.id);
   const t = today();
   const atGym = !!(p.at_gym_until && new Date(p.at_gym_until).getTime() > Date.now());
-  if (!rows.length) return { kind: 'new', atGym, slacking: false, idle: 0, lastDate: null, trainedToday: false };
-  let last = '';
-  rows.forEach((r) => { if (r.date > last) last = r.date; });
-  const trainedToday = rows.some((r) => r.date === t);
+  if (!days.length) return { kind: 'new', atGym, slacking: false, idle: 0, lastDate: null, trainedToday: false };
+  const last = days[days.length - 1];
+  const trainedToday = days.indexOf(t) >= 0;
   let idle = Math.max(0, daysBetween(last, t) - 1);
   if (scheduleMode(p.id) === 'weekly' && hasSchedule(p.id) && idle > 0) {
     for (let d = addDays(last, 1); d < t; d = addDays(d, 1)) {
@@ -910,6 +931,7 @@ function loadRoutine(r) {
   if (state.extraDate !== state.logDate) { state.extraDate = state.logDate; state.extra = []; }
   r.exercises.forEach((n) => { if (!state.extra.some((x) => key(x) === key(n))) state.extra.push(n); });
   state.restDay = '';
+  state.loadedRoutine = { id: r.id, date: state.logDate };
   render();
   toast(r.name + ' loaded');
   if (state.logDate === today()) advanceRotation(r.id);
@@ -1231,7 +1253,7 @@ async function backupAll() {
     tables: {
       profiles: state.profiles, workouts: state.workouts, bodyweights: state.bodyweights, routines: state.routines,
       schedule_days: state.schedule, schedule_overrides: state.overrides, schedule_settings: state.settings,
-      kudos: state.kudos, challenges: state.challenges, exercise_muscles: muscles, exercise_settings: state.exSettings, messages: chatRows, message_reactions: chatRx
+      kudos: state.kudos, challenges: state.challenges, exercise_muscles: muscles, exercise_settings: state.exSettings, activities: state.activities, goals: state.goals, messages: chatRows, message_reactions: chatRx
     }
   };
   downloadText('gym_backup_' + today() + '.json', JSON.stringify(data, null, 1), 'application/json');
@@ -1725,11 +1747,16 @@ function openAccount() {
     h('div', { class: 'muted', style: 'margin-bottom:8px', text: 'Post my new PRs to the homies chat' }),
     seg([['on', 'on'], ['off', 'off']], state.autopost ? 'on' : 'off', (v) => { state.autopost = v === 'on'; lsSet('gym_autopost', state.autopost ? '1' : '0'); openAccount(); }),
     h('h3', { text: 'BACKUP' }),
-    h('button', { class: 'btn ghost', onclick: backupAll, text: 'download full backup (JSON)' }),
-    h('div', { class: 'muted', style: 'margin-top:6px', text: 'Everyone\'s data in one file. PIN hashes are left out.' }),
+    h('div', { class: 'btnrow' },
+      h('button', { class: 'btn ghost', onclick: backupMine, text: 'my data (JSON)' }),
+      h('button', { class: 'btn ghost', onclick: backupAll, text: 'everyone (JSON)' })
+    ),
+    h('div', { class: 'muted', style: 'margin-top:6px', text: 'Everyone includes all homies, chat and goals. PIN hashes are left out.' }),
     h('h3', { text: 'EXERCISES' }),
     h('button', { class: 'btn ghost', onclick: openExerciseManager, text: 'rename or merge exercises' }),
     h('h3', { text: 'ACCOUNT' }),
+    h('button', { class: 'btn ghost', style: 'margin-bottom:8px', onclick: () => openProfile(state.me.id), text: 'view my profile' }),
+    h('button', { class: 'btn ghost', style: 'margin-bottom:8px', onclick: openChangePin, text: 'change PIN' }),
     h('div', { class: 'btnrow' },
       h('button', { class: 'btn ghost', onclick: () => { closeSheet(); logout(); }, text: 'switch user' }),
       h('button', { class: 'btn ghost danger', onclick: openDeleteAccount, text: 'delete account' })
@@ -2142,7 +2169,7 @@ function renderChatList(stick) {
     }) : null;
     const time = new Date(m.created_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
     list.appendChild(h('div', { class: 'msg' + (mine ? ' me' : '') },
-      p ? avatar(p, 26) : h('span', { class: 'av', style: 'width:26px;height:26px' }),
+      p ? h('span', { class: 'tap', onclick: () => openProfile(p.id) }, avatar(p, 26)) : h('span', { class: 'av', style: 'width:26px;height:26px' }),
       h('div', { class: 'mcol' },
         h('div', { class: 'mname' }, mine ? 'you' : (p ? p.username : 'someone'), h('span', { text: time + (m.edited ? ', edited' : '') })),
         h('div', { class: 'bubble', onclick: () => openMsgSheet(m) }, msgBody(m)),
@@ -2189,6 +2216,513 @@ function closeChat() {
   updateChatDot();
 }
 
+/* training days (lifting or other activity) */
+
+const ACT_KINDS = ['Run', 'Walk', 'Bike', 'Swim', 'Sports', 'Mobility', 'Other'];
+
+function trainDays(pid) {
+  const s = new Set();
+  (state.byUser[pid] || []).forEach((r) => { if (!isWarm(r)) s.add(r.date); });
+  (state.actByUser[pid] || []).forEach((a) => s.add(a.date));
+  return Array.from(s).sort();
+}
+
+/* 'lifted', or the kind of other activity, or null when nothing was done that day */
+function dayKind(pid, date) {
+  if ((state.byUser[pid] || []).some((r) => r.date === date && !isWarm(r))) return 'lifted';
+  const a = (state.actByUser[pid] || []).find((x) => x.date === date);
+  return a ? a.kind.toLowerCase() : null;
+}
+
+async function logActivity(kind, minutes, notes) {
+  const row = { profile_id: state.me.id, date: state.logDate, kind, minutes: minutes || null, notes: notes || '' };
+  const res = await db.from('activities').insert(row).select().single();
+  if (res.error) { toast(res.error.message + ' (run setup7.sql?)', 'err'); return false; }
+  state.activities.push(res.data);
+  derive();
+  render();
+  toast(kind + ' logged');
+  return true;
+}
+
+async function deleteActivity(id) {
+  const res = await db.from('activities').delete().eq('id', id).eq('profile_id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.activities = state.activities.filter((a) => a.id !== id);
+  derive();
+  render();
+  return true;
+}
+
+function openActivity(a) {
+  let kind = a ? a.kind : 'Run';
+  const chips = h('div', { class: 'chiprow' });
+  const draw = () => {
+    chips.replaceChildren(ACT_KINDS.map((k) => h('button', {
+      class: 'chip' + (k === kind ? ' on' : ''),
+      onclick: () => { kind = k; draw(); },
+      text: k
+    })));
+  };
+  draw();
+  const mins = h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', placeholder: 'minutes (optional)', value: a && a.minutes ? String(a.minutes) : '' });
+  const note = h('input', { class: 'field', placeholder: 'note (optional)', value: a ? a.notes : '' });
+  const body = [sheetHead(a ? 'Activity' : 'Other activity'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Anything that is not lifting still keeps your streak alive. Logged for ' + longDate(state.logDate) + '.' }),
+    chips, mins, note];
+  if (!a) {
+    const save = h('button', { class: 'btn', text: 'save' });
+    save.addEventListener('click', async () => {
+      const m = parseInt(mins.value, 10);
+      if (await logActivity(kind, Number.isFinite(m) ? m : null, note.value.trim())) closeSheet();
+    });
+    body.push(save);
+  } else {
+    const del = h('button', { class: 'btn ghost danger', text: 'delete' });
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+      if (await deleteActivity(a.id)) closeSheet();
+    });
+    body.push(del);
+  }
+  openSheet(body);
+}
+
+/* repeat a past session */
+
+function lastRoutineSession(r, before) {
+  const rk = new Set(r.exercises.map(key));
+  if (!rk.size) return null;
+  const byDay = {};
+  state.mine.forEach((w) => {
+    if (isWarm(w) || w.date >= before) return;
+    (byDay[w.date] = byDay[w.date] || []).push(w);
+  });
+  let best = null;
+  Object.keys(byDay).sort().forEach((d) => {
+    const shared = new Set(byDay[d].map((w) => key(w.exercise)).filter((k) => rk.has(k)));
+    if (shared.size >= Math.max(1, Math.ceil(rk.size * 0.6))) best = d;
+  });
+  return best ? { date: best, rows: byDay[best].slice().sort(byTime) } : null;
+}
+
+async function repeatSession(sess) {
+  const rows = sess.rows.map((w) => ({
+    profile_id: state.me.id, exercise: w.exercise, weight: w.weight, reps: w.reps, sets: w.sets,
+    date: state.logDate, rpe: null, set_type: w.set_type
+  }));
+  const res = await db.from('workouts').insert(rows).select();
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  res.data.forEach((r) => state.workouts.push(normSet(r)));
+  state.loadedRoutine = null;
+  derive();
+  render();
+  toast('Logged ' + rows.length + ' sets from ' + shortDate(sess.date) + '. Edit what changed.');
+}
+
+/* lift history */
+
+function openLiftHistory(name) {
+  const k = key(name);
+  const rows = state.mine.filter((r) => key(r.exercise) === k && !isWarm(r)).sort(byTime);
+  if (!rows.length) { toast('No history for ' + name + ' yet'); return; }
+  const byDay = {};
+  rows.forEach((r) => { (byDay[r.date] = byDay[r.date] || []).push(r); });
+  const days = Object.keys(byDay).sort();
+  const prSets = rows.filter((r) => state.prIds.has(r.id));
+  const best = topSet(rows);
+  const est = est1RM(k);
+  const cv = h('canvas');
+  const body = [
+    sheetHead(name),
+    h('div', { class: 'tiles three' },
+      h('div', { class: 'tile' }, h('b', { text: String(days.length) }), h('span', { text: 'SESSIONS' })),
+      h('div', { class: 'tile' }, h('b', { text: dw(best.weight) }), h('span', { text: 'HEAVIEST ' + unit().toUpperCase() })),
+      h('div', { class: 'tile' }, h('b', { text: est ? fmt(toDisp(est.e)) : '-' }), h('span', { text: 'EST. 1RM' }))
+    )
+  ];
+  if (days.length > 1) {
+    body.push(h('div', { class: 'chartbox', style: 'height:150px;margin-bottom:6px' }, cv));
+  }
+  body.push(h('h3', { text: 'RECENT SESSIONS' }));
+  days.slice().reverse().slice(0, 8).forEach((d) => {
+    const bits = byDay[d].map((r) => dw(r.weight) + '×' + r.reps + (r.rpe != null ? '@' + r.rpe : '') + (r.sets > 1 ? '(' + r.sets + ')' : ''));
+    const hasPR = byDay[d].some((r) => state.prIds.has(r.id));
+    body.push(h('div', { class: 'lrow' },
+      h('div', { class: 'l' }, h('div', { text: shortDate(d) }), h('small', { text: bits.join(' · ') })),
+      h('div', { class: 'r' }, hasPR ? h('span', { class: 'star', text: 'PR' }) : null)
+    ));
+  });
+  if (prSets.length) {
+    body.push(h('h3', { text: 'PR TIMELINE' }));
+    prSets.slice().reverse().slice(0, 6).forEach((r) => {
+      body.push(h('div', { class: 'lrow' }, h('div', { class: 'l', text: shortDate(r.date) }), h('div', { class: 'r', text: dw(r.weight) + ' ' + unit() + ' × ' + r.reps })));
+    });
+  }
+  openSheet(body);
+  if (days.length > 1 && typeof Chart !== 'undefined') {
+    const top = days.map((d) => Math.round(toDisp(Math.max.apply(null, byDay[d].map((r) => Number(r.weight)))) * 10) / 10);
+    liveCharts.push(new Chart(cv, {
+      type: 'line',
+      data: { labels: days.map(shortDate), datasets: [lineSet('Top weight', top, '#39d353', { fill: true })] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: Object.assign({}, TIP, { displayColors: false }) },
+        scales: axes()
+      }
+    }));
+  }
+}
+
+/* goals */
+
+function goalProgress(g) {
+  const k = key(g.exercise);
+  const need = g.reps || 1;
+  const target = Number(g.target);
+  let best = 0;
+  let doneOn = null;
+  (state.byUser[g.profile_id] || []).slice().sort(byTime).forEach((r) => {
+    if (key(r.exercise) !== k || isWarm(r) || r.reps < need) return;
+    const w = Number(r.weight);
+    if (w > best) best = w;
+    if (!doneOn && w >= target - 0.0005) doneOn = r.date;
+  });
+  return { best, pct: target > 0 ? Math.min(1, best / target) : 0, done: !!doneOn, doneOn };
+}
+
+function goalRow(g, editable) {
+  const gp = goalProgress(g);
+  const c = colorOf(g.profile_id);
+  let sub;
+  if (gp.done) sub = 'reached ' + shortDate(gp.doneOn);
+  else if (g.deadline) {
+    const left = daysBetween(today(), g.deadline);
+    sub = left >= 0 ? left + ' days left' : 'overdue by ' + (-left) + ' days';
+  } else sub = 'no deadline';
+  const row = h('div', { class: 'goal' + (editable ? ' tap' : ''), onclick: editable ? () => openGoalSheet(g) : null },
+    h('div', { class: 'lrow', style: 'border-top:none;padding:0' },
+      h('div', { class: 'l' }, h('div', { text: g.exercise }), h('small', { text: dw(g.target) + ' ' + unit() + (g.reps > 1 ? ' for ' + g.reps + ' reps' : '') })),
+      h('div', { class: 'r' }, gp.done ? h('span', { class: 'pill done', text: 'DONE' }) : Math.round(gp.pct * 100) + '%', h('small', { text: sub }))
+    ),
+    h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.max(2, Math.round(gp.pct * 100)) + '%;background:' + (gp.done ? '#39d353' : c) })),
+    h('small', { class: 'muted', style: 'font-size:10px', text: 'best so far ' + dw(gp.best) + ' ' + unit() })
+  );
+  return row;
+}
+
+function goalsCard(pid, editable, showOwner) {
+  const gs = state.goals.filter((g) => g.profile_id === pid);
+  const card = h('div', { class: 'card' });
+  if (!gs.length) card.appendChild(h('div', { class: 'muted', text: 'No goals yet.' }));
+  gs.slice().sort((a, b) => (goalProgress(a).done ? 1 : 0) - (goalProgress(b).done ? 1 : 0)).forEach((g) => card.appendChild(goalRow(g, editable)));
+  if (editable) card.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:12px', onclick: () => openGoalSheet(), text: '+ new goal' }));
+  return card;
+}
+
+function openGoalSheet(g) {
+  const dl = h('datalist', { id: 'goalList' }, liftOptions().map((o) => h('option', { value: o.name })));
+  const ex = h('input', { class: 'field', list: 'goalList', placeholder: 'lift (e.g. Bench Press)', autocomplete: 'off', value: g ? g.exercise : '' });
+  const w = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: 'target weight (' + unit() + ')', value: g ? dw(g.target) : '' });
+  const r = h('input', { class: 'field', type: 'number', inputmode: 'numeric', min: '1', placeholder: 'reps (default 1)', value: g && g.reps > 1 ? String(g.reps) : '' });
+  const d = h('input', { class: 'field', type: 'date', value: g && g.deadline ? g.deadline : '' });
+  const save = h('button', { class: 'btn', text: g ? 'save goal' : 'add goal' });
+  save.addEventListener('click', async () => {
+    const name = ex.value.trim();
+    const tw = parseFloat(w.value);
+    if (!name || !Number.isFinite(tw) || tw <= 0) { toast('Pick a lift and a target weight', 'err'); return; }
+    const row = { exercise: name, target: fromDisp(tw), reps: Math.max(1, parseInt(r.value, 10) || 1), deadline: d.value || null };
+    if (await saveGoal(g ? g.id : null, row)) closeSheet();
+  });
+  const body = [sheetHead(g ? 'Edit goal' : 'New goal'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'A goal is reached when you log a working set at or above the weight, for at least that many reps.' }),
+    dl, ex, w, r,
+    h('h3', { text: 'DEADLINE (OPTIONAL)' }), d, save];
+  if (g) {
+    const del = h('button', { class: 'btn ghost danger', style: 'margin-top:8px', text: 'delete goal' });
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+      if (await deleteGoal(g.id)) closeSheet();
+    });
+    body.push(del);
+  }
+  openSheet(body);
+}
+
+async function saveGoal(id, row) {
+  let res;
+  if (id) res = await db.from('goals').update(row).eq('id', id).eq('profile_id', state.me.id).select().single();
+  else res = await db.from('goals').insert(Object.assign({ profile_id: state.me.id }, row)).select().single();
+  if (res.error) { toast(res.error.message + ' (run setup7.sql?)', 'err'); return false; }
+  state.goals = state.goals.filter((x) => x.id !== res.data.id).concat([res.data]);
+  derive();
+  render();
+  return true;
+}
+
+async function deleteGoal(id) {
+  const res = await db.from('goals').delete().eq('id', id).eq('profile_id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.goals = state.goals.filter((g) => g.id !== id);
+  render();
+  return true;
+}
+
+/* badges (worked out from your data, nothing stored) */
+
+function badgesFor(pid) {
+  const rows = (state.byUser[pid] || []).filter((r) => !isWarm(r));
+  const days = trainDays(pid).length;
+  const sk = streakOf(pid);
+  const prs = rows.filter((r) => state.prIds.has(r.id)).length;
+  const volume = rows.reduce((s, r) => s + vol(r), 0);
+  const heavy = (re, not) => rows.reduce((m, r) => (re.test(r.exercise) && !(not && not.test(r.exercise)) ? Math.max(m, Number(r.weight)) : m), 0);
+  const owner = {};
+  state.workouts.forEach((w) => { owner[w.id] = w.profile_id; });
+  const gave = state.kudos.filter((k) => k.from_profile === pid).length;
+  const got = state.kudos.filter((k) => owner[k.workout_id] === pid).length;
+  const wk = weekStreak(rows);
+  const goalsDone = state.goals.filter((g) => g.profile_id === pid && goalProgress(g).done).length;
+  const weighIns = state.bodyweights.filter((b) => b.profile_id === pid).length;
+  const acts = (state.actByUser[pid] || []).length;
+  const list = [];
+  const add = (name, desc, have, need, fmtFn) => list.push({ name, desc, have, need, earned: have >= need, prog: (fmtFn || String)(Math.min(have, need)) + ' / ' + (fmtFn || String)(need) });
+  add('First rep', 'Train once', days, 1);
+  add('Regular', 'Train on 10 days', days, 10);
+  add('Dedicated', 'Train on 50 days', days, 50);
+  add('Centurion', 'Train on 100 days', days, 100);
+  add('On a roll', 'Reach a 4 day streak', sk.best, 4);
+  add('Locked in', 'Reach a 10 day streak', sk.best, 10);
+  add('Unstoppable', 'Reach a 30 day streak', sk.best, 30);
+  add('Consistent', 'Hit 3+ days a week for 4 weeks in a row', wk, 4);
+  add('Machine', 'Hit 3+ days a week for 12 weeks in a row', wk, 12);
+  add('PR hunter', 'Set your first PR', prs, 1);
+  add('PR machine', 'Set 10 PRs', prs, 10);
+  add('PR legend', 'Set 50 PRs', prs, 50);
+  const volFmt = (v) => fmt(toDisp(v)) + ' ' + unit();
+  add('Mover', 'Move 50,000 lb in total', volume, 50000, volFmt);
+  add('Hauler', 'Move 250,000 lb in total', volume, 250000, volFmt);
+  add('Titan', 'Move 1,000,000 lb in total', volume, 1000000, volFmt);
+  const wFmt = (v) => dw(v) + ' ' + unit();
+  add('225 club', 'Bench press 225 lb', heavy(/bench press/i, /incline|decline|dumbbell/i), 225, wFmt);
+  add('315 club', 'Squat 315 lb', heavy(/squat/i), 315, wFmt);
+  add('405 club', 'Deadlift 405 lb', heavy(/deadlift/i, /romanian|stiff|rdl/i), 405, wFmt);
+  add('Goal getter', 'Reach a goal', goalsDone, 1);
+  add('Hype man', 'Give 10 kudos', gave, 10);
+  add('Respected', 'Get 10 kudos', got, 10);
+  add('Scale regular', 'Log 10 weigh-ins', weighIns, 10);
+  add('Cross trainer', 'Log 5 other activities', acts, 5);
+  return list;
+}
+
+function badgeChips(pid, onlyEarned) {
+  const list = badgesFor(pid).filter((b) => !onlyEarned || b.earned);
+  if (!list.length) return h('div', { class: 'muted', text: 'No badges yet.' });
+  return h('div', { class: 'bdgrid' }, list.map((b) => h('div', { class: 'bdg' + (b.earned ? ' on' : ''), title: b.desc },
+    h('b', { text: (b.earned ? '★ ' : '') + b.name }),
+    onlyEarned ? null : h('small', { text: b.earned ? b.desc : b.prog })
+  )));
+}
+
+/* profile pages */
+
+function openProfile(pid) {
+  const p = state.profiles.find((x) => x.id === pid);
+  if (!p) return;
+  const st = statusOf(p);
+  const sk = streakOf(pid);
+  const rows = (state.byUser[pid] || []).filter((r) => !isWarm(r));
+  const volume = rows.reduce((s, r) => s + vol(r), 0);
+  const prs = rows.filter((r) => state.prIds.has(r.id)).length;
+  const best = {};
+  rows.forEach((r) => {
+    if (!qual(r)) return;
+    const k = key(r.exercise);
+    const e = e1rm(Number(r.weight), r.reps, r.rpe);
+    if (!best[k] || e > best[k].e) best[k] = { name: r.exercise, e, r };
+  });
+  const top = Object.values(best).sort((a, b) => b.e - a.e).slice(0, 5);
+  const byDay = {};
+  rows.forEach((r) => { (byDay[r.date] = byDay[r.date] || []).push(r); });
+  const recent = Object.keys(byDay).sort().reverse().slice(0, 4);
+  const bw = state.bwLatest[pid];
+  const plan = planFor(pid, today());
+  const earned = badgesFor(pid).filter((b) => b.earned).length;
+  const goals = state.goals.filter((g) => g.profile_id === pid);
+
+  const body = [
+    sheetHead(p.username),
+    h('div', { class: 'lbname', style: 'margin-bottom:10px' }, avatar(p, 30), statusPills(p), h('span', { class: 'muted', text: 'since ' + shortDate(p.created_at.slice(0, 10)) })),
+    h('div', { class: 'tiles' },
+      h('div', { class: 'tile' }, h('b', { text: String(sk.cur) }), h('span', { text: 'DAY STREAK' }), h('small', { text: 'best ' + sk.best })),
+      h('div', { class: 'tile' }, h('b', { text: String(trainDays(pid).length) }), h('span', { text: 'TRAINING DAYS' })),
+      h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'TOTAL VOLUME ' + unit().toUpperCase() })),
+      h('div', { class: 'tile' }, h('b', { text: String(prs) }), h('span', { text: 'PRS' }), h('small', { text: earned + ' badges' }))
+    )
+  ];
+  if (plan.routine) body.push(h('div', { class: 'hint' }, 'Today: ', h('b', { text: plan.routine.name })));
+  if (bw) body.push(h('div', { class: 'muted', style: 'margin-bottom:6px', text: 'Body weight ' + dw(bw.weight) + ' ' + unit() + ' on ' + shortDate(bw.date) }));
+  if (top.length) {
+    body.push(h('h3', { text: 'TOP LIFTS (EST. 1RM)' }));
+    top.forEach((t) => body.push(h('div', { class: 'lrow' },
+      h('div', { class: 'l' }, h('div', { text: t.name }), h('small', { text: dw(t.r.weight) + ' × ' + t.r.reps })),
+      h('div', { class: 'r', text: fmt(toDisp(t.e)) + ' ' + unit() })
+    )));
+  }
+  if (goals.length) {
+    body.push(h('h3', { text: 'GOALS' }));
+    goals.forEach((g) => body.push(goalRow(g, false)));
+  }
+  body.push(h('h3', { text: 'BADGES' }), badgeChips(pid, true));
+  if (recent.length) {
+    body.push(h('h3', { text: 'RECENT SESSIONS' }));
+    recent.forEach((d) => {
+      const names = [];
+      byDay[d].forEach((r) => { if (names.indexOf(r.exercise) < 0) names.push(r.exercise); });
+      body.push(h('div', { class: 'lrow' },
+        h('div', { class: 'l' }, h('div', { text: shortDate(d) }), h('small', { text: names.slice(0, 3).join(', ') + (names.length > 3 ? ' +' + (names.length - 3) : '') })),
+        h('div', { class: 'r', text: byDay[d].reduce((s, r) => s + r.sets, 0) + ' sets' })
+      ));
+    });
+  }
+  if (pid !== state.me.id) {
+    body.push(h('button', { class: 'btn', style: 'margin-top:14px', onclick: () => openH2H(state.me.id, pid), text: 'head to head with me' }));
+  }
+  openSheet(body);
+}
+
+/* head to head */
+
+function openH2H(aId, bId) {
+  const A = state.profiles.find((p) => p.id === aId);
+  const B = state.profiles.find((p) => p.id === bId);
+  if (!A || !B) return;
+  const since = addDays(today(), -29);
+  const stat = (p) => {
+    const rows = (state.byUser[p.id] || []).filter((r) => !isWarm(r));
+    const sk = streakOf(p.id);
+    return {
+      rows, cur: sk.cur, best: sk.best,
+      days30: trainDays(p.id).filter((d) => d >= since).length,
+      vol30: rows.filter((r) => r.date >= since).reduce((s, r) => s + vol(r), 0),
+      prs: rows.filter((r) => state.prIds.has(r.id)).length
+    };
+  };
+  const a = stat(A);
+  const b = stat(B);
+  let aw = 0;
+  let bwn = 0;
+  const lines = [];
+  const vs = (label, x, y, fx, fy) => {
+    const xa = x > y + 0.0005;
+    const yb = y > x + 0.0005;
+    if (xa) aw += 1;
+    if (yb) bwn += 1;
+    lines.push(h('div', { class: 'vsrow' },
+      h('span', { text: label }),
+      h('span', { class: 'c' + (xa ? ' win' : ''), text: fx }),
+      h('span', { class: 'c' + (yb ? ' win' : ''), text: fy })
+    ));
+  };
+  vs('Current streak', a.cur, b.cur, a.cur + 'd', b.cur + 'd');
+  vs('Best streak', a.best, b.best, a.best + 'd', b.best + 'd');
+  vs('Training days, 30d', a.days30, b.days30, String(a.days30), String(b.days30));
+  vs('Volume, 30d', a.vol30, b.vol30, fmt(toDisp(a.vol30)), fmt(toDisp(b.vol30)));
+  vs('Total PRs', a.prs, b.prs, String(a.prs), String(b.prs));
+
+  const bestOf = (rows, k) => {
+    let m = null;
+    rows.forEach((r) => {
+      if (!qual(r) || key(r.exercise) !== k) return;
+      const e = e1rm(Number(r.weight), r.reps, r.rpe);
+      if (!m || e > m) m = e;
+    });
+    return m;
+  };
+  const common = {};
+  a.rows.forEach((r) => { if (qual(r)) common[key(r.exercise)] = common[key(r.exercise)] || { name: r.exercise, n: 0 }; });
+  Object.keys(common).forEach((k) => {
+    const eb = bestOf(b.rows, k);
+    if (eb === null) { delete common[k]; return; }
+    common[k].n = a.rows.filter((r) => key(r.exercise) === k).length + b.rows.filter((r) => key(r.exercise) === k).length;
+  });
+  const shared = Object.keys(common).sort((x, y) => common[y].n - common[x].n).slice(0, 8);
+  const liftLines = lines.length;
+  shared.forEach((k) => {
+    const ea = bestOf(a.rows, k);
+    const eb = bestOf(b.rows, k);
+    vs(common[k].name, ea, eb, fmt(toDisp(ea)), fmt(toDisp(eb)));
+  });
+
+  const sel = (cur, other, left) => h('select', {
+    class: 'pick', style: 'margin:0',
+    onchange: (e) => (left ? openH2H(e.target.value, other) : openH2H(other, e.target.value))
+  }, state.profiles.map((p) => h('option', { value: p.id, selected: p.id === cur, text: p.username })));
+
+  openSheet([
+    sheetHead('Head to head'),
+    h('div', { class: 'inrow' }, sel(aId, bId, true), sel(bId, aId, false)),
+    h('div', { class: 'hint' }, aw === bwn ? 'All tied up, ' + aw + ' each.' : (aw > bwn ? A.username + ' leads ' + aw + ' to ' + bwn : B.username + ' leads ' + bwn + ' to ' + aw)),
+    h('div', { class: 'vsrow head' }, h('span'), h('span', { class: 'c', text: A.username }), h('span', { class: 'c', text: B.username })),
+    lines.slice(0, liftLines),
+    shared.length ? h('h3', { text: 'SHARED LIFTS, BEST EST. 1RM (' + unit().toUpperCase() + ')' }) : null,
+    lines.slice(liftLines),
+    !shared.length ? h('div', { class: 'muted', style: 'margin-top:10px', text: 'No lifts in common yet.' }) : null
+  ]);
+}
+
+/* change PIN */
+
+async function changePin(cur, next) {
+  if (!/^\d{4}$/.test(next)) { toast('New PIN must be 4 digits', 'err'); return false; }
+  const row = await db.from('profiles').select('pin_hash').eq('id', state.me.id).single();
+  if (row.error) { toast(row.error.message, 'err'); return false; }
+  if (row.data.pin_hash !== await sha(state.me.username + ':' + cur)) { toast('Current PIN is wrong', 'err'); return false; }
+  const res = await db.from('profiles').update({ pin_hash: await sha(state.me.username + ':' + next) }).eq('id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  toast('PIN changed');
+  return true;
+}
+
+function openChangePin() {
+  const mk = (ph) => h('input', { class: 'field', type: 'password', inputmode: 'numeric', maxlength: '4', placeholder: ph, autocomplete: 'off' });
+  const cur = mk('current PIN');
+  const n1 = mk('new PIN (4 digits)');
+  const n2 = mk('new PIN again');
+  const go = h('button', { class: 'btn', text: 'change PIN' });
+  go.addEventListener('click', async () => {
+    if (n1.value !== n2.value) { toast('New PINs do not match', 'err'); return; }
+    if (await changePin(cur.value.trim(), n1.value.trim())) closeSheet();
+  });
+  openSheet([sheetHead('Change PIN'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'You stay logged in on your other devices. Forgot your current PIN? Ask the person running the site to reset it.' }),
+    cur, n1, n2, go]);
+}
+
+/* backups */
+
+async function backupMine() {
+  toast('Building backup...');
+  try { await loadAll(); } catch (e) { toast('Could not reach the database', 'err'); return; }
+  const me = state.me.id;
+  const mine = (rows) => rows.filter((r) => r.profile_id === me);
+  let msgs = [];
+  try { msgs = await fetchAll('messages', 'id, profile_id, body, kind, meta, edited, created_at', (q) => q.order('created_at')); } catch (e) { /* chat not set up */ }
+  const data = {
+    app: 'gym', scope: 'mine', user: state.me.username, exported_at: new Date().toISOString(),
+    tables: {
+      workouts: mine(state.workouts), bodyweights: mine(state.bodyweights), routines: mine(state.routines),
+      schedule_days: mine(state.schedule), schedule_overrides: mine(state.overrides), schedule_settings: mine(state.settings),
+      exercise_settings: mine(state.exSettings), activities: mine(state.activities), goals: mine(state.goals),
+      kudos_given: state.kudos.filter((k) => k.from_profile === me), messages: mine(msgs)
+    }
+  };
+  downloadText('gym_' + state.me.username + '_backup_' + today() + '.json', JSON.stringify(data, null, 1), 'application/json');
+  toast('Your backup downloaded');
+}
+
 /* LOG tab */
 
 function exCard(name, k, rows) {
@@ -2201,7 +2735,7 @@ function exCard(name, k, rows) {
 
   card.appendChild(h('div', { class: 'exhead' },
     h('div', null,
-      h('div', { class: 'exname' }, name, ssPartner(state.logDate, k) ? h('span', { class: 'sstag', text: 'SUPERSET' }) : null),
+      h('div', { class: 'exname tap', title: 'Lift history', onclick: () => openLiftHistory(name) }, name, ssPartner(state.logDate, k) ? h('span', { class: 'sstag', text: 'SUPERSET' }) : null),
       h('button', { class: 'mtag', onclick: () => openMuscle(name), text: muscleOf(name).toUpperCase() })
     ),
     best !== null ? h('span', { class: 'prtag', text: 'PR ' + dw(best) }) : null
@@ -2228,6 +2762,17 @@ function exCard(name, k, rows) {
     const bits = prior.rows.slice(0, 4).map((r) => dw(r.weight) + '×' + r.reps + (r.rpe != null ? '@' + r.rpe : '') + (r.sets > 1 ? '(' + r.sets + ')' : ''));
     const more = prior.rows.length > 4 ? ' +' + (prior.rows.length - 4) : '';
     card.appendChild(h('div', { class: 'prior', text: 'Last ' + shortDate(prior.date) + ': ' + bits.join(' · ') + more }));
+    const tappable = prior.rows.filter((r) => r.sets === 1).slice(0, 6);
+    if (tappable.length) {
+      card.appendChild(h('div', { class: 'chiprow', style: 'margin-bottom:8px' },
+        h('span', { class: 'muted', style: 'font-size:10px', text: 'tap to repeat:' }),
+        tappable.map((r) => h('button', {
+          class: 'rchip',
+          onclick: () => logSet(name, toDisp(r.weight), r.reps, null, r.set_type === 'warmup' ? 'working' : r.set_type),
+          text: dw(r.weight) + '×' + r.reps
+        }))
+      ));
+    }
   } else {
     card.appendChild(h('div', { class: 'prior', text: 'First time logging this one.' }));
   }
@@ -2378,7 +2923,13 @@ function renderLog() {
           h('small', { text: rotation ? 'NEXT IN YOUR SPLIT' : (isToday ? 'PLANNED FOR TODAY' : 'PLANNED FOR THIS DAY') }),
           h('b', { text: plan.routine.name })
         ),
-        h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'start' })
+        h('div', { class: 'btnstack' },
+          h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'start' }),
+          (() => {
+            const ls = lastRoutineSession(plan.routine, date);
+            return ls ? h('button', { class: 'btn sm ghost', onclick: () => { loadRoutine(plan.routine); repeatSession(ls); }, text: 'repeat ' + shortDate(ls.date) }) : null;
+          })()
+        )
       ));
     }
     const others = myRoutines.filter((r) => !plan.routine || r.id !== plan.routine.id);
@@ -2397,6 +2948,17 @@ function renderLog() {
     ));
   }
 
+  if (!rows.length && state.loadedRoutine && state.loadedRoutine.date === date) {
+    const lr = state.routineById[state.loadedRoutine.id];
+    const ls = lr ? lastRoutineSession(lr, date) : null;
+    if (ls) {
+      wrap.appendChild(h('div', { class: 'banner' },
+        h('div', null, h('small', { text: 'SAME AS LAST TIME?' }), h('b', { text: lr.name + ', ' + shortDate(ls.date) })),
+        h('button', { class: 'btn sm', onclick: () => repeatSession(ls), text: 'log same sets' })
+      ));
+    }
+  }
+
   wrap.appendChild(h('div', { class: 'tiles three' },
     h('div', { class: 'tile' }, h('b', { text: String(sets) }), h('span', { text: 'WORKING SETS' })),
     h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(volume)) }), h('span', { text: 'VOLUME ' + unit().toUpperCase() })),
@@ -2407,6 +2969,16 @@ function renderLog() {
   }
   order.forEach((o) => wrap.appendChild(exCard(o.name, o.k, rows.filter((r) => key(r.exercise) === o.k))));
   wrap.appendChild(h('button', { class: 'addex', onclick: () => openPicker(), text: '+ ADD EXERCISE' }));
+  const acts = (state.actByUser[state.me.id] || []).filter((a) => a.date === date);
+  if (acts.length) {
+    const ac = h('div', { class: 'card', style: 'margin-top:12px' }, h('div', { class: 'eyebrow', text: 'OTHER ACTIVITY' }));
+    acts.forEach((a) => ac.appendChild(h('div', { class: 'lrow tap', onclick: () => openActivity(a) },
+      h('div', { class: 'l' }, h('div', { text: a.kind }), a.notes ? h('small', { text: a.notes }) : null),
+      h('div', { class: 'r', text: a.minutes ? a.minutes + ' min' : '' })
+    )));
+    wrap.appendChild(ac);
+  }
+  wrap.appendChild(h('button', { class: 'addex', style: 'margin-top:8px', onclick: () => openActivity(), text: '+ OTHER ACTIVITY (RUN, BIKE, SPORT...)' }));
   if (work.length) wrap.appendChild(h('button', { class: 'btn', style: 'margin-top:12px', onclick: () => openFinish(date), text: 'FINISH WORKOUT' }));
   return wrap;
 }
@@ -2527,7 +3099,7 @@ function renderPlan() {
   const wk0 = state.planWeek;
   const tNow = today();
   const doneDays = {};
-  state.profiles.forEach((p) => { doneDays[p.id] = new Set((state.byUser[p.id] || []).filter((r) => !isWarm(r)).map((r) => r.date)); });
+  state.profiles.forEach((p) => { doneDays[p.id] = new Set(trainDays(p.id)); });
   wrap.appendChild(h('div', { class: 'monthnav' },
     h('button', { onclick: () => { state.planWeek = addDays(wk0, -7); render(); }, text: '‹' }),
     h('span', { text: wk0 === weekStart(tNow) ? 'This week' : shortDate(wk0) + ' to ' + shortDate(addDays(wk0, 6)) }),
@@ -2541,12 +3113,12 @@ function renderPlan() {
   }
   state.profiles.forEach((p) => {
     const c = colorOf(p.id);
-    grid.appendChild(h('div', { class: 'who' }, avatar(p, 16), h('span', { class: 'nm', text: p.username })));
+    grid.appendChild(h('div', { class: 'who tap', onclick: () => openProfile(p.id) }, avatar(p, 16), h('span', { class: 'nm', text: p.username })));
     for (let i = 0; i < 7; i += 1) {
       const dt = addDays(wk0, i);
       const plan = planFor(p.id, dt);
       const did = doneDays[p.id].has(dt);
-      let txt = plan.routine ? plan.routine.name : (did ? 'lifted' : '-');
+      let txt = plan.routine ? plan.routine.name : (did ? dayKind(p.id, dt) : '-');
       const style = did ? 'background:' + c + '2a;border-color:' + c + ';color:' + c : (plan.routine ? 'border-color:' + c + '88;color:' + c : '');
       grid.appendChild(h('button', {
         class: 'wcell' + (dt === tNow ? ' today' : '') + (!did && plan.routine ? ' plan' : ''),
@@ -2565,7 +3137,7 @@ function renderPlan() {
 
   const done = {};
   state.profiles.forEach((p) => {
-    done[p.id] = new Set((state.byUser[p.id] || []).filter((r) => !isWarm(r)).map((r) => r.date));
+    done[p.id] = new Set(trainDays(p.id));
   });
 
   const cal = h('div', { class: 'cal' });
@@ -2588,7 +3160,7 @@ function renderPlan() {
         if (!did && !plan.routine) return;
         inner.push(h('div', { class: 'pline', style: 'color:' + c },
           h('i', { style: 'border-color:' + c + ';background:' + (did ? c : 'transparent') }),
-          plan.routine ? plan.routine.name : 'lifted'));
+          plan.routine ? plan.routine.name : dayKind(p.id, date)));
       });
     } else {
       const dots = h('div', { class: 'dots' });
@@ -2679,28 +3251,35 @@ function heatmap(rows) {
 
 function renderProgress() {
   const work = state.mine.filter((r) => !isWarm(r));
+  const myActs = state.actByUser[state.me.id] || [];
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'PROGRESS' }));
   wrap.appendChild(h('h1', null, 'Your ', h('span', { class: 'accent', text: 'numbers' })));
-  if (!work.length) {
+  if (!work.length && !myActs.length) {
     wrap.appendChild(emptyCard('Nothing yet', 'Log a few working sets and your charts show up here.'));
+    wrap.appendChild(h('h2', null, 'Goals'));
+    wrap.appendChild(goalsCard(state.me.id, true));
+    return wrap;
+  }
+  if (!work.length) {
+    wrap.appendChild(emptyCard('No lifting yet', 'Your activity counts toward your streak. Log working sets to unlock the charts.'));
     return wrap;
   }
 
   const ws = weekStart(today());
   const thisWeek = work.filter((r) => r.date >= ws);
-  const weekDays = new Set(thisWeek.map((r) => r.date)).size;
+  const weekDays = new Set(thisWeek.map((r) => r.date).concat(myActs.filter((a) => a.date >= ws).map((a) => a.date))).size;
   const monthStart = addDays(today(), -29);
   const prs30 = work.filter((r) => r.date >= monthStart && state.prIds.has(r.id)).length;
   wrap.appendChild(h('div', { class: 'tiles four' },
     h('div', { class: 'tile' }, h('b', { text: String(weekDays) }), h('span', { text: 'DAYS THIS WEEK' })),
-    h('div', { class: 'tile' }, h('b', { text: String(weekStreak(work)) }), h('span', { text: 'WEEK STREAK' }), h('small', { text: WEEK_GOAL + '+ days a week' })),
+    h('div', { class: 'tile' }, h('b', { text: String(weekStreak(work.concat(myActs))) }), h('span', { text: 'WEEK STREAK' }), h('small', { text: WEEK_GOAL + '+ days a week' })),
     h('div', { class: 'tile' }, h('b', { text: fmt(toDisp(thisWeek.reduce((s, r) => s + vol(r), 0))) }), h('span', { text: 'VOLUME THIS WEEK' })),
     h('div', { class: 'tile' }, h('b', { text: String(prs30) }), h('span', { text: 'PRS, 30 DAYS' }))
   ));
 
   wrap.appendChild(h('h2', null, 'Consistency', h('small', { text: 'LAST 12 WEEKS' })));
-  wrap.appendChild(h('div', { class: 'card' }, heatmap(work)));
+  wrap.appendChild(h('div', { class: 'card' }, heatmap(work.concat(myActs.map((a) => ({ date: a.date, sets: 4 }))))));
 
   const weeks = lastWeeks(8);
   const vals = weeklyVolume(work, weeks);
@@ -2782,6 +3361,11 @@ function renderProgress() {
   ));
   wrap.appendChild(strength);
 
+  wrap.appendChild(h('h2', null, 'Goals'));
+  wrap.appendChild(goalsCard(state.me.id, true));
+  wrap.appendChild(h('h2', null, 'Badges', h('small', { text: badgesFor(state.me.id).filter((b) => b.earned).length + ' EARNED' })));
+  wrap.appendChild(h('div', { class: 'card' }, badgeChips(state.me.id, false)));
+
   wrap.appendChild(h('h2', null, 'Personal records', h('small', { text: 'HEAVIEST SET' })));
   const prCard = h('div', { class: 'card' });
   exs.slice(0, 10).forEach((e) => {
@@ -2811,7 +3395,7 @@ function crewStats(start, end) {
       p,
       volume: rows.reduce((s, r) => s + vol(r), 0),
       sets: rows.reduce((s, r) => s + r.sets, 0),
-      days: new Set(rows.map((r) => r.date)).size,
+      days: new Set(rows.map((r) => r.date).concat((state.actByUser[p.id] || []).filter((a) => a.date >= start && (!end || a.date <= end)).map((a) => a.date))).size,
       prs: rows.filter((r) => state.prIds.has(r.id)).length
     };
   });
@@ -2830,7 +3414,7 @@ function lbRow(i, p, valText, sub, frac) {
   return h('div', { class: 'lb' + (p.id === state.me.id ? ' me' : '') },
     h('div', { class: 'rank r' + (i + 1), text: String(i + 1) }),
     h('div', null,
-      h('div', { class: 'lbname' }, avatar(p, 22), p.username,
+      h('div', { class: 'lbname tap', onclick: () => openProfile(p.id) }, avatar(p, 22), p.username,
         st.atGym ? h('em', { text: 'AT GYM' }) : null,
         st.slacking ? h('em', { class: 'slackem', style: 'color:#f87171;border-color:rgba(248,113,113,0.4)', text: 'SLACKING' }) : null),
       h('div', { class: 'bar' }, h('i', { style: 'width:' + Math.max(2, Math.round(frac * 100)) + '%;background:' + c }))
@@ -2915,7 +3499,7 @@ function renderCrew() {
     const plan = planFor(p.id, today());
     stCard.appendChild(h('div', { class: 'lrow' },
       h('div', { class: 'l' },
-        h('div', { class: 'lbname' }, avatar(p, 24), p.username),
+        h('div', { class: 'lbname tap', onclick: () => openProfile(p.id) }, avatar(p, 24), p.username),
         (() => {
           const bits = [];
           if (plan.routine) bits.push('Today: ' + plan.routine.name);
@@ -3059,6 +3643,17 @@ function renderCrew() {
 
   /* body weights */
   sink = sections.activity;
+  sink.appendChild(h('h2', null, 'Goals', h('small', { text: 'EVERYONE' })));
+  const goalCard = h('div', { class: 'card' });
+  state.profiles.forEach((p) => {
+    const gs = state.goals.filter((g) => g.profile_id === p.id);
+    gs.forEach((g) => {
+      goalCard.appendChild(h('div', { class: 'lbname tap', style: 'margin:10px 0 4px', onclick: () => openProfile(p.id) }, avatar(p, 18), p.username));
+      goalCard.appendChild(goalRow(g, false));
+    });
+  });
+  if (!state.goals.length) goalCard.appendChild(h('div', { class: 'muted', text: 'No goals yet. Add yours in the Progress tab.' }));
+  sink.appendChild(goalCard);
   sink.appendChild(h('h2', null, 'Weigh-ins'));
   const bwCard = h('div', { class: 'card' });
   let anyBw = false;
