@@ -1464,11 +1464,12 @@ function plateMath(target, bar, plates) {
   return { out, short: left > 0.01 ? left : 0, per };
 }
 
-function openPlates(startW) {
+function openPlates(startW, exName) {
   const kg = state.unit === 'kg';
-  const bars = kg ? [20, 15] : [45, 35];
+  const smith = kg ? 10 : 25;
+  const bars = kg ? [20, 15, smith] : [45, 35, smith];
   const plates = kg ? [25, 20, 15, 10, 5, 2.5, 1.25] : [45, 35, 25, 10, 5, 2.5];
-  let bar = bars[0];
+  let bar = /smith/i.test(exName || '') ? smith : bars[0];
   const wIn = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', placeholder: 'target weight (' + unit() + ')', value: startW > 0 ? fmtW(startW) : '' });
   const out = h('div', { class: 'plates' });
   const barRow = h('div', { class: 'chiprow' });
@@ -1477,7 +1478,7 @@ function openPlates(startW) {
     bars.forEach((b) => barRow.appendChild(h('button', {
       class: 'chip' + (b === bar ? ' on' : ''),
       onclick: () => { bar = b; drawBars(); draw(); },
-      text: b + ' ' + unit()
+      text: b + ' ' + unit() + (b === smith ? ' smith' : '')
     })));
   }
   function draw() {
@@ -1501,8 +1502,8 @@ function openPlates(startW) {
 
 /* warmup sets */
 
-function warmupPlan(work) {
-  const bar = state.unit === 'kg' ? 20 : 45;
+function warmupPlan(work, exName) {
+  const bar = /smith/i.test(exName || '') ? (state.unit === 'kg' ? 10 : 25) : (state.unit === 'kg' ? 20 : 45);
   const step = state.unit === 'kg' ? 2.5 : 5;
   if (!(work > bar * 1.25)) return [];
   const round = (x) => Math.max(bar, Math.round(x / step) * step);
@@ -1518,7 +1519,7 @@ function openWarmup(name, work) {
   const go = h('button', { class: 'btn', text: 'log these as warmup sets' });
   let plan = [];
   function draw() {
-    plan = warmupPlan(parseFloat(wIn.value));
+    plan = warmupPlan(parseFloat(wIn.value), name);
     out.replaceChildren();
     go.classList.toggle('hidden', !plan.length);
     if (!plan.length) { out.appendChild(h('div', { class: 'muted', text: 'Enter a working weight above the empty bar.' })); return; }
@@ -2985,7 +2986,7 @@ function exCard(name, k, rows) {
   const panel = h('div', { class: 'morepanel' + (state.more[dk] ? '' : ' hidden') },
     typeBar,
     h('div', { class: 'tools' },
-      h('button', { onclick: () => openPlates(parseFloat(wIn.value) || 0), text: 'plates' }),
+      h('button', { onclick: () => openPlates(parseFloat(wIn.value) || 0, name), text: 'plates' }),
       h('button', { onclick: () => openWarmup(name, parseFloat(wIn.value) || (sug ? sug.w : 0)), text: 'warmup sets' }),
       h('button', { onclick: () => openSuperset(name, k), text: hasSS ? 'superset on' : 'superset' }),
       h('button', { onclick: () => openExSettings(name), text: pf && (pf.rep_min || pf.jump || pf.note) ? 'settings *' : 'settings' })
