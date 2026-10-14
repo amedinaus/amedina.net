@@ -350,6 +350,7 @@
   .scanline { position: absolute; left: 10%; right: 10%; top: 50%; height: 2px; background: rgba(57,211,83,0.8); box-shadow: 0 0 12px rgba(57,211,83,0.8); }
   .ingrow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
   .ingrow select { flex: 1; min-width: 0; }
+  .hint.warn { background: rgba(230,168,23,0.06); border-color: rgba(230,168,23,0.35); color: #c9d1d9; }
 
 </style>
 </head>
@@ -445,6 +446,7 @@ function today() {
 function parseD(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
 function fmtD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function addDays(s, n) { const d = parseD(s); d.setDate(d.getDate() + n); return fmtD(d); }
+function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / 86400000); }
 function shortDate(s) { return parseD(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
 
 /* toast, sheet, segmented control */
@@ -719,13 +721,14 @@ async function deleteLog(id) {
   return true;
 }
 
-async function saveTargets(t) {
-  const row = { profile_id: state.me.id, calories: t.calories, protein: t.protein, carbs: t.carbs, fat: t.fat, updated_at: new Date().toISOString() };
+async function saveTargetRow(patch) {
+  const row = Object.assign({ profile_id: state.me.id }, patch, { updated_at: new Date().toISOString() });
   const res = await db.from('food_targets').upsert(row, { onConflict: 'profile_id' });
-  if (res.error) { toast(res.error.message, 'err'); return false; }
-  state.targets = row;
+  if (res.error) { toast(res.error.message + (/column|schema/i.test(res.error.message) ? ' (run setup11.sql?)' : ''), 'err'); return false; }
+  state.targets = Object.assign({}, state.targets || {}, row);
   return true;
 }
+const saveTargets = (t) => saveTargetRow({ calories: t.calories, protein: t.protein, carbs: t.carbs, fat: t.fat });
 
 async function copyFromDay(src, dst) {
   const rows = state.log.filter((l) => l.date === src);
@@ -752,6 +755,269 @@ async function clearFoodData() {
   state.foods = [];
   state.targets = null;
   return true;
+}
+/* goal weight, calorie plan, check-ins */
+
+const ACTIVITY = [
+  ['sedentary', 'Desk job, little exercise', 1.2],
+  ['light', 'Lift or train 1 to 3 days a week', 1.375],
+  ['moderate', 'Lift or train 3 to 5 days a week', 1.55],
+  ['high', 'Train hard 6 to 7 days a week', 1.725],
+  ['athlete', 'Physical job plus daily training', 1.9]
+];
+const round5 = (n) => Math.round(n / 5) * 5;
+const dispW = (lb) => r1(toDisp(lb));
+const fromDispW = (v) => (state.unit === 'kg' ? Number(v) * LB_PER_KG : Number(v));
+const latestWeightLb = () => (state.bodyweights.length ? Number(state.bodyweights[state.bodyweights.length - 1].weight) : null);
+
+function macrosFor(cal, lb, cutting) {
+  const protein = round5((cutting ? 1.0 : 0.8) * lb);
+  const fat = round5(Math.max(0.3 * lb, (0.2 * cal) / 9));
+  const carbs = Math.max(0, round5((cal - 4 * protein - 9 * fat) / 4));
+  return { protein, fat, carbs };
+}
+
+/* p: { sex, age, heightCm, activity, weightLb, goalLb, paceLb (positive, lb per week) } */
+function buildPlan(p) {
+  const kg = p.weightLb / LB_PER_KG;
+  const bmr = 10 * kg + 6.25 * p.heightCm - 5 * p.age + (p.sex === 'male' ? 5 : -161);
+  const mult = (ACTIVITY.find((a) => a[0] === p.activity) || ACTIVITY[2])[2];
+  const tdee = bmr * mult;
+  const diff = p.goalLb - p.weightLb;
+  const maintain = Math.abs(diff) < 1;
+  const dir = maintain ? 0 : (diff < 0 ? -1 : 1);
+  const rate = dir * (maintain ? 0 : p.paceLb);
+  let cal = tdee + rate * 500;
+  const floor = p.sex === 'male' ? 1500 : 1200;
+  let floored = false;
+  if (cal < floor) { cal = floor; floored = true; }
+  cal = Math.round(cal / 10) * 10;
+  const m = macrosFor(cal, p.weightLb, dir < 0);
+  const eff = (cal - tdee) / 500;
+  const weeks = dir && eff * dir > 0 ? Math.abs(diff / eff) : null;
+  return {
+    bmr: Math.round(bmr), tdee: Math.round(tdee / 10) * 10, cal, rate: Math.round(rate * 100) / 100, dir, floored,
+    fast: Math.abs(rate) > 0.01 * p.weightLb, weeks, protein: m.protein, carbs: m.carbs, fat: m.fat
+  };
+}
+
+/* least squares slope of weight over time, in lb per week */
+function slopePerWeek(pts) {
+  const n = pts.length;
+  if (n < 2) return 0;
+  const x0 = pts[0].date;
+  const xs = pts.map((b) => (parseD(b.date) - parseD(x0)) / 86400000);
+  const ys = pts.map((b) => Number(b.weight));
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let num2 = 0;
+  let den = 0;
+  for (let i = 0; i < n; i += 1) { num2 += (xs[i] - mx) * (ys[i] - my); den += (xs[i] - mx) * (xs[i] - mx); }
+  return den ? (num2 / den) * 7 : 0;
+}
+
+const signedW = (lb) => (lb > 0 ? '+' : lb < 0 ? '-' : '') + r1(Math.abs(toDisp(lb)));
+
+/* what is the weight trend telling us, and what should change */
+function checkIn() {
+  const t = state.targets || {};
+  if (t.goal_weight_lb == null || t.goal_rate_lb == null) return null;
+  const goal = Number(t.goal_weight_lb);
+  const g = Number(t.goal_rate_lb);
+  const latest = latestWeightLb();
+  if (latest === null) return { kind: 'need', msg: 'Log a weigh-in to start tracking your goal.' };
+  if ((g < 0 && latest <= goal) || (g > 0 && latest >= goal)) {
+    return { kind: 'reached', msg: 'You hit your goal weight of ' + dispW(goal) + ' ' + state.unit + '. Set a new goal, or switch to maintaining.' };
+  }
+  const t0 = today();
+  const winStart = [t.goal_start_date || addDays(t0, -21), addDays(t0, -21)].sort().pop();
+  const pts = state.bodyweights.filter((b) => b.date >= winStart);
+  const span = pts.length ? daysBetween(pts[0].date, pts[pts.length - 1].date) : 0;
+  if (pts.length < 3 || span < 10) {
+    return { kind: 'need', msg: 'Need about 2 weeks of weigh-ins (3 or more) to read the trend. Weigh in 2 or 3 times a week, same time of day.' };
+  }
+  const rate = slopePerWeek(pts);
+  const from = addDays(t0, -13);
+  const days = {};
+  state.log.filter((l) => l.date >= from).forEach((l) => { days[l.date] = (days[l.date] || 0) + Number(l.calories); });
+  const dn = Object.keys(days);
+  if (dn.length < 5) {
+    return { kind: 'logging', rate, msg: 'You logged food on only ' + dn.length + ' of the last 14 days, so I cannot tell if the plan or the logging is the problem. Log more days.' };
+  }
+  const avg = dn.reduce((s, d) => s + days[d], 0) / dn.length;
+  const target = Number(t.calories) || 0;
+  if (target > 0 && g < 0 && avg > target * 1.07) {
+    return { kind: 'adherence', rate, avg, msg: 'You average about ' + fmt(avg) + ' cal on logged days, over your ' + fmt(target) + ' target. Hit the target for 2 weeks before changing it.' };
+  }
+  if (target > 0 && g > 0 && avg < target * 0.93) {
+    return { kind: 'adherence', rate, avg, msg: 'You average about ' + fmt(avg) + ' cal on logged days, under your ' + fmt(target) + ' target. Eat to the target for 2 weeks before changing it.' };
+  }
+  const floor = t.sex === 'female' ? 1200 : 1500;
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const step = (gapLbPerWeek, lo, hi) => Math.round(clamp(Math.abs(gapLbPerWeek) * 500, lo, hi) / 50) * 50;
+  let delta = 0;
+  let why = '';
+  if (g < 0) {
+    if (rate > g * 0.5) { delta = -step(g - rate, 100, 300); why = rate >= 0.1 ? 'Your weight is going up or flat while the goal is to lose.' : 'You are losing slower than planned.'; }
+    else if (rate < g * 1.6 && rate < -0.01 * latest) { delta = step(rate - g, 100, 200); why = 'You are losing faster than 1% of body weight a week, which tends to cost muscle.'; }
+  } else if (g > 0) {
+    if (rate < g * 0.5) { delta = step(g - rate, 100, 300); why = 'You are gaining slower than planned.'; }
+    else if (rate > g * 1.6) { delta = -step(rate - g, 100, 200); why = 'You are gaining faster than planned, which is mostly extra fat.'; }
+  } else if (Math.abs(rate) > 0.3) {
+    delta = Math.round(clamp(-rate * 500, -300, 300) / 50) * 50;
+    why = rate > 0 ? 'Your weight is creeping up while the goal is to maintain.' : 'Your weight is dropping while the goal is to maintain.';
+  }
+  const trend = 'Trend: ' + signedW(rate) + ' ' + state.unit + ' per week (plan ' + (g === 0 ? 'hold steady' : signedW(g)) + ').';
+  if (!delta || !target) return { kind: 'onpace', rate, avg, msg: 'On pace. ' + trend };
+  const newCal = Math.max(floor, Math.round((target + delta) / 10) * 10);
+  if (newCal === target) return { kind: 'onpace', rate, avg, msg: 'On pace. ' + trend };
+  return { kind: 'adjust', rate, avg, delta: newCal - target, newCal, msg: why + ' ' + trend + ' Suggestion: ' + (newCal > target ? 'raise' : 'lower') + ' your target by ' + Math.abs(newCal - target) + ' to ' + fmt(newCal) + ' cal.' };
+}
+
+async function applyNewCalories(newCal) {
+  const t = state.targets || {};
+  const lb = latestWeightLb() || 170;
+  const m = macrosFor(newCal, lb, Number(t.goal_rate_lb) < 0);
+  if (await saveTargetRow({ calories: newCal, protein: m.protein, carbs: m.carbs, fat: m.fat })) { render(); toast('Target updated to ' + fmt(newCal) + ' cal'); }
+}
+
+async function logWeighIn(lbVal) {
+  if (!Number.isFinite(lbVal) || lbVal <= 0) { toast('Enter a weight', 'err'); return false; }
+  const date = today();
+  const existing = state.bodyweights.find((b) => b.date === date);
+  let res;
+  if (existing) res = await db.from('bodyweights').update({ weight: lbVal }).eq('id', existing.id).eq('profile_id', state.me.id).select().single();
+  else res = await db.from('bodyweights').insert({ profile_id: state.me.id, date, weight: lbVal }).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.bodyweights = state.bodyweights.filter((b) => b.id !== res.data.id).concat([res.data]).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+  return true;
+}
+
+function openWeighIn() {
+  const last = latestWeightLb();
+  const w = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: 'weight (' + state.unit + ')', value: last ? String(dispW(last)) : '' });
+  const go = h('button', { class: 'btn', text: 'save weigh-in' });
+  go.addEventListener('click', async () => {
+    if (await logWeighIn(fromDispW(parseFloat(w.value)))) { closeSheet(); render(); toast('Weigh-in saved'); }
+  });
+  openSheet([sheetHead('Weigh-in, today'), h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Saved to the same list as the gym app BODY tab.' }), w, go]);
+}
+
+function goalCard() {
+  const t = state.targets || {};
+  const card = h('div', { class: 'card' });
+  if (t.goal_weight_lb == null) {
+    card.appendChild(h('b', { text: 'Goal weight' }));
+    card.appendChild(h('p', { class: 'muted', style: 'margin:6px 0 10px', text: 'Set a goal and I will work out what to eat each day and check your progress.' }));
+    card.appendChild(h('button', { class: 'btn', onclick: openGoal, text: 'set up my goal' }));
+    return card;
+  }
+  const latest = latestWeightLb();
+  const goal = Number(t.goal_weight_lb);
+  const start = t.start_weight_lb != null ? Number(t.start_weight_lb) : latest;
+  let pct = 0;
+  if (latest != null && start != null && Math.abs(start - goal) > 0.01) pct = Math.max(0, Math.min(100, Math.round(((start - latest) / (start - goal)) * 100)));
+  card.appendChild(h('div', { class: 'lrow', style: 'border-top:none;padding:0' },
+    h('div', { class: 'l' }, h('b', { text: 'Goal ' + dispW(goal) + ' ' + state.unit }), h('small', { class: 'muted', text: latest != null ? 'now ' + dispW(latest) + ' ' + state.unit : 'no weigh-ins yet' })),
+    h('div', { class: 'r' }, Number(t.goal_rate_lb) === 0 ? 'maintain' : pct + '%')
+  ));
+  if (Number(t.goal_rate_lb) !== 0) card.appendChild(h('div', { class: 'bar big' }, h('i', { style: 'width:' + Math.max(2, pct) + '%;background:#39d353' })));
+  const ci = checkIn();
+  if (ci) {
+    const cls = ci.kind === 'adjust' || ci.kind === 'adherence' ? 'hint warn' : 'hint';
+    card.appendChild(h('div', { class: cls, text: ci.msg }));
+    if (ci.kind === 'adjust') card.appendChild(h('button', { class: 'btn', style: 'margin-bottom:8px', onclick: () => applyNewCalories(ci.newCal), text: 'set target to ' + fmt(ci.newCal) + ' cal' }));
+  }
+  card.appendChild(h('div', { class: 'btnrow' },
+    h('button', { class: 'btn ghost', onclick: openWeighIn, text: 'log weigh-in' }),
+    h('button', { class: 'btn ghost', onclick: openGoal, text: 'edit goal' })
+  ));
+  return card;
+}
+
+function openGoal() {
+  const t = state.targets || {};
+  const kg = state.unit === 'kg';
+  let sex = t.sex || 'male';
+  let activity = t.activity || 'moderate';
+  const paces = kg ? [0.25, 0.5, 0.75, 1] : [0.5, 1, 1.5, 2];
+  let pace = t.goal_rate_lb ? Math.abs(Number(t.goal_rate_lb)) / (kg ? LB_PER_KG : 1) : (kg ? 0.5 : 1);
+  pace = paces.reduce((a, b) => (Math.abs(b - pace) < Math.abs(a - pace) ? b : a), paces[0]);
+  const mk = (ph, v, extra) => h('input', Object.assign({ class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: ph, value: v == null || v === '' ? '' : String(v) }, extra || {}));
+  const age = mk('age', t.age);
+  const cm = t.height_cm ? Number(t.height_cm) : null;
+  const ft = mk('feet', cm ? Math.floor(cm / 2.54 / 12) : '');
+  const inch = mk('inches', cm ? Math.round((cm / 2.54) % 12) : '');
+  const cmIn = mk('height (cm)', cm ? Math.round(cm) : '');
+  const last = latestWeightLb();
+  const cur = mk('current weight (' + state.unit + ')', last ? dispW(last) : '');
+  const goalIn = mk('goal weight (' + state.unit + ')', t.goal_weight_lb != null ? dispW(Number(t.goal_weight_lb)) : '');
+  const sexRow = h('div', { class: 'chiprow' });
+  const actRow = h('div', { class: 'chiprow' });
+  const paceRow = h('div', { class: 'chiprow' });
+  const actNote = h('div', { class: 'muted', style: 'font-size:11px;margin-bottom:8px' });
+  const out = h('div');
+  const heightCm = () => (kg ? num(cmIn.value) : (((num(ft.value) || 0) * 12 + (num(inch.value) || 0)) * 2.54) || null);
+  const inputs = () => {
+    const a = num(age.value);
+    const hc = heightCm();
+    const w = num(cur.value);
+    const gw = num(goalIn.value);
+    if (!a || a < 14 || a > 99 || !hc || hc < 120 || hc > 230 || !w || !gw) return null;
+    return { sex, age: a, heightCm: hc, activity, weightLb: fromDispW(w), goalLb: fromDispW(gw), paceLb: pace * (kg ? LB_PER_KG : 1) };
+  };
+  const drawChips = () => {
+    fill(sexRow, h('span', { class: 'muted', text: 'sex (for the calorie formula):' }), ['male', 'female'].map((s) => h('button', { class: 'chip' + (s === sex ? ' on' : ''), onclick: () => { sex = s; drawChips(); drawPlan(); }, text: s })));
+    fill(actRow, ACTIVITY.map((a) => h('button', { class: 'chip' + (a[0] === activity ? ' on' : ''), onclick: () => { activity = a[0]; drawChips(); drawPlan(); }, text: a[0] })));
+    actNote.textContent = (ACTIVITY.find((a) => a[0] === activity) || [])[1] || '';
+    fill(paceRow, h('span', { class: 'muted', text: 'pace per week:' }), paces.map((p) => h('button', { class: 'chip' + (p === pace ? ' on' : ''), onclick: () => { pace = p; drawChips(); drawPlan(); }, text: p + ' ' + state.unit })));
+  };
+  const drawPlan = () => {
+    const inp = inputs();
+    if (!inp) { fill(out, h('div', { class: 'muted', text: 'Fill in age, height, weight and goal weight to see your plan.' })); return; }
+    const p = buildPlan(inp);
+    const lines = [];
+    lines.push(h('div', { class: 'tiles' },
+      h('div', { class: 'tile' }, h('b', { text: fmt(p.cal) }), h('span', { text: 'CALORIES PER DAY' }), h('small', { text: 'maintenance about ' + fmt(p.tdee) })),
+      h('div', { class: 'tile' }, h('b', { text: p.protein + 'g' }), h('span', { text: 'PROTEIN' }), h('small', { text: p.carbs + 'g carbs, ' + p.fat + 'g fat' }))
+    ));
+    if (p.dir === 0) lines.push(h('div', { class: 'hint', text: 'Your goal is within 1 ' + (kg ? 'kg' : 'lb') + ' of where you are, so this is a maintenance plan.' }));
+    else if (p.weeks) {
+      const eta = addDays(today(), Math.round(p.weeks * 7));
+      lines.push(h('div', { class: 'hint', text: 'At ' + pace + ' ' + state.unit + ' a week that is about ' + Math.round(p.weeks) + ' weeks, around ' + shortDate(eta) + '.' }));
+    }
+    if (p.floored) lines.push(h('div', { class: 'hint warn', text: 'That pace would drop you under a safe minimum, so the calories are held at ' + fmt(p.cal) + ' and the pace will be slower.' }));
+    else if (p.fast) lines.push(h('div', { class: 'hint warn', text: 'That is faster than about 1% of body weight a week, which tends to cost muscle. A slower pace is usually better.' }));
+    lines.push(h('div', { class: 'muted', style: 'font-size:10px;margin-top:6px', text: 'Formula: Mifflin St Jeor estimate times activity. It is a starting point. Your weight trend over a few weeks tells the truth, and the app will suggest changes if it does not move. This is general guidance, not medical advice.' }));
+    const save = h('button', { class: 'btn', style: 'margin-top:10px', text: 'use this plan' });
+    save.addEventListener('click', async () => {
+      const prevGoal = t.goal_weight_lb != null ? Number(t.goal_weight_lb) : null;
+      const same = prevGoal != null && Math.abs(prevGoal - inp.goalLb) < 0.01 && Math.abs(Number(t.goal_rate_lb) - p.rate) < 0.01;
+      const lastW = latestWeightLb();
+      if (lastW === null || Math.abs(lastW - inp.weightLb) > 0.05) { if (!(await logWeighIn(inp.weightLb))) return; }
+      const ok = await saveTargetRow({
+        sex, age: inp.age, height_cm: Math.round(inp.heightCm * 10) / 10, activity, goal_weight_lb: inp.goalLb, goal_rate_lb: p.rate,
+        goal_start_date: same && t.goal_start_date ? t.goal_start_date : today(), start_weight_lb: same && t.start_weight_lb != null ? t.start_weight_lb : inp.weightLb,
+        calories: p.cal, protein: p.protein, carbs: p.carbs, fat: p.fat
+      });
+      if (ok) { closeSheet(); render(); toast('Plan saved. Targets updated.'); }
+    });
+    lines.push(save);
+    fill(out, lines);
+  };
+  [age, ft, inch, cmIn, cur, goalIn].forEach((i) => i.addEventListener('input', drawPlan));
+  drawChips();
+  openSheet([
+    sheetHead('Goal and body stats'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Tell me a bit about you and your goal and I will set your daily targets. Saved to your account only.' }),
+    sexRow, age,
+    h('h3', { text: 'HEIGHT' }), kg ? cmIn : h('div', { class: 'inrow' }, ft, inch),
+    h('h3', { text: 'ACTIVITY' }), actRow, actNote,
+    h('h3', { text: 'WEIGHT' }), h('div', { class: 'inrow' }, cur, goalIn), paceRow,
+    out,
+    h('button', { class: 'linkbtn', onclick: () => { closeSheet(); openTargets(); }, text: 'or set targets by hand' })
+  ]);
+  drawPlan();
 }
 /* scanner */
 
@@ -916,6 +1182,10 @@ function renderToday() {
     macroBar('FAT', tot.f, t.fat, '#a78bfa')
   ));
   wrap.appendChild(card);
+  const ci = checkIn();
+  if (ci && (ci.kind === 'adjust' || ci.kind === 'adherence' || ci.kind === 'reached')) {
+    wrap.appendChild(h('div', { class: 'hint warn tap', onclick: () => setTab('trends'), text: ci.msg }));
+  }
 
   wrap.appendChild(h('button', { class: 'btn', onclick: () => openAdd('search'), text: '+ ADD FOOD' }));
   const sub = h('div', { class: 'btnrow' },
@@ -1252,6 +1522,7 @@ function renderTrends() {
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'TRENDS' }));
   wrap.appendChild(h('h1', null, 'How it is ', h('span', { class: 'accent', text: 'going' })));
+  wrap.appendChild(goalCard());
   wrap.appendChild(seg([[7, '7 days'], [30, '30 days'], [90, '90 days']], state.trendDays, (v) => { state.trendDays = v; render(); }));
   const N = state.trendDays;
   const dates = [];
@@ -1324,6 +1595,7 @@ function openTargets() {
   openSheet([
     sheetHead('Daily targets'),
     h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Leave carbs and fat empty if you only track calories and protein.' }),
+    h('button', { class: 'linkbtn', style: 'margin:0 0 8px', onclick: () => { closeSheet(); openGoal(); }, text: 'or let me work them out from your goal' }),
     last ? h('div', { class: 'hint' }, 'A common rule of thumb for lifters is 0.7 to 1 g of protein per lb of body weight. At ' + fmt(toDisp(lbs)) + ' ' + state.unit + ' that is about ' + fmt(lbs * 0.7) + ' to ' + fmt(lbs) + ' g.') : null,
     cal, pro, car, fat, save
   ]);
@@ -1346,7 +1618,8 @@ function openAccount() {
   });
   openSheet([
     sheetHead(state.me.username),
-    h('button', { class: 'btn ghost', onclick: () => { closeSheet(); openTargets(); }, text: 'daily targets' }),
+    h('button', { class: 'btn ghost', onclick: () => { closeSheet(); openGoal(); }, text: 'goal weight and body stats' }),
+    h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => { closeSheet(); openTargets(); }, text: 'daily targets' }),
     h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: exportLog, text: 'export food log (CSV)' }),
     h('a', { class: 'btn ghost linkrow', href: '/gym/', text: 'open the gym app' }),
     h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => { closeSheet(); logout(); }, text: 'switch user' }),
