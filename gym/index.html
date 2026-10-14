@@ -336,6 +336,7 @@
   <div class="card">
     <input id="user" class="field" placeholder="username" autocapitalize="none" autocomplete="off">
     <input id="pin" class="field" placeholder="4-digit PIN" inputmode="numeric" maxlength="4" type="password">
+    <input id="invite" class="field" placeholder="invite code (new profiles only)" autocapitalize="none" autocomplete="off">
     <div class="btnrow">
       <button id="loginBtn" class="btn">log in</button>
       <button id="createBtn" class="btn ghost">create profile</button>
@@ -1781,6 +1782,7 @@ function openAccount() {
     h('button', { class: 'btn ghost', onclick: openExerciseManager, text: 'rename or merge exercises' }),
     h('h3', { text: 'ACCOUNT' }),
     h('button', { class: 'btn ghost', style: 'margin-bottom:8px', onclick: () => openProfile(state.me.id), text: 'view my profile' }),
+    h('a', { class: 'btn ghost', style: 'display:block;text-align:center;text-decoration:none;margin-bottom:8px', href: '/food/', text: 'open the food tracker' }),
     h('button', { class: 'btn ghost', style: 'margin-bottom:8px', onclick: openChangePin, text: 'change PIN' }),
     h('div', { class: 'btnrow' },
       h('button', { class: 'btn ghost', onclick: () => { closeSheet(); logout(); }, text: 'switch user' }),
@@ -4004,7 +4006,9 @@ async function auth(create) {
   if (found.error) { $('loginErr').textContent = found.error.message; return; }
   if (create) {
     if (found.data) { $('loginErr').textContent = 'That username is taken.'; return; }
-    const ins = await db.from('profiles').insert({ username, pin_hash: hash }).select('id, username').single();
+    const code = $('invite').value.trim();
+    if (!code) { $('loginErr').textContent = 'New profiles need the invite code.'; return; }
+    const ins = await db.rpc('create_profile', { p_code: code, p_username: username, p_hash: hash });
     if (ins.error) { $('loginErr').textContent = ins.error.message; return; }
     enter(ins.data);
   } else {
@@ -4046,6 +4050,7 @@ function logout() {
   chatStop();
   applyWake();
   $('pin').value = '';
+  $('invite').value = '';
   showLogin();
 }
 
