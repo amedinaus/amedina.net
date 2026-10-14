@@ -398,7 +398,7 @@ const state = {
   tab: 'log', logDate: '', extraDate: '', extra: [], drafts: {}, more: {}, focusEx: '',
   crewTab: 'today', crewRange: 'week', crewMetric: 'days', liftKey: '', liftSort: 'e1rm', progKey: '', muscleRange: 30,
   calMonth: '', calWho: 'all', planWeek: '', chat: null, autopost: true, prPosted: {}, restDay: '',
-  restOn: true, restSound: true, keepAwake: true, rest: null, pending: [], loaded: false, error: ''
+  restOn: true, restSound: true, foodHit: {}, keepAwake: true, rest: null, pending: [], loaded: false, error: ''
 };
 
 /* tiny helpers */
@@ -617,7 +617,8 @@ async function loadAll() {
     fetchAll('schedule_settings', 'profile_id, mode, cycle, pos, pos_date', (q) => q.order('profile_id')).catch(() => []),
     fetchAll('exercise_settings', 'profile_id, key, note, rep_min, rep_max, jump', (q) => q.order('profile_id').order('key')).catch(() => []),
     fetchAll('activities', 'id, profile_id, date, kind, minutes, notes, created_at', (q) => q.order('created_at').order('id')).catch(() => []),
-    fetchAll('goals', 'id, profile_id, exercise, target, reps, deadline, created_at', (q) => q.order('created_at').order('id')).catch(() => [])
+    fetchAll('goals', 'id, profile_id, exercise, target, reps, deadline, created_at', (q) => q.order('created_at').order('id')).catch(() => []),
+    fetchAll('food_share', 'profile_id, share, protein_date, protein_hit', (q) => q.eq('share', true)).catch(() => [])
   ]);
   state.profiles = r[0];
   state.workouts = r[1].map(normSet);
@@ -633,6 +634,8 @@ async function loadAll() {
   state.exSettings = r[10];
   state.activities = r[11];
   state.goals = r[12];
+  state.foodHit = {};
+  r[13].forEach((f) => { if (f.protein_hit && f.protein_date === today()) state.foodHit[f.profile_id] = true; });
   derive();
 }
 
@@ -3589,6 +3592,7 @@ function statusPills(p) {
   const st = statusOf(p);
   const out = [];
   if (st.atGym) out.push(h('span', { class: 'pill gym', text: 'AT THE GYM' }));
+  if (state.foodHit && state.foodHit[p.id]) out.push(h('span', { class: 'pill done', text: 'PROTEIN HIT' }));
   if (st.slacking) out.push(h('span', { class: 'pill slack', text: 'SLACKING ' + st.idle + 'D' }));
   else if (st.trainedToday) out.push(h('span', { class: 'pill done', text: 'TRAINED TODAY' }));
   else if (st.kind === 'new') out.push(h('span', { class: 'pill ok', text: 'NO SETS YET' }));
