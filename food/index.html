@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#080c10">
+<title>Food Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+<style>
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    background: #080c10; color: #e6edf3; min-height: 100vh;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.6;
+    padding-bottom: calc(140px + env(safe-area-inset-bottom));
+  }
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 1000;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  }
+  button { font-family: inherit; cursor: pointer; color: inherit; background: none; border: none; }
+  input, select { font-family: inherit; color: #e6edf3; color-scheme: dark; }
+  .hidden { display: none !important; }
+  .tap { cursor: pointer; }
+  .tap:hover { color: #39d353; }
+  .rchip { font-size: 12px; border: 1px solid #30363d; border-radius: 8px; padding: 8px 12px; color: #c9d1d9; }
+  .rchip:hover { border-color: #39d353; color: #39d353; }
+  .btnstack { display: flex; flex-direction: column; gap: 6px; }
+  .goal { padding: 10px 0; border-top: 1px solid #161b22; }
+  .goal:first-child { border-top: none; padding-top: 0; }
+  .bdgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .bdg { border: 1px solid #21262d; border-radius: 8px; padding: 8px 10px; color: #484f58; }
+  .bdg b { display: block; font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 700; }
+  .bdg small { display: block; font-size: 9px; margin-top: 2px; }
+  .bdg.on { border-color: rgba(230,168,23,0.5); color: #e6a817; background: rgba(230,168,23,0.06); }
+  .vsrow { display: grid; grid-template-columns: 1fr 70px 70px; gap: 6px; padding: 8px 0; border-top: 1px solid #161b22; font-size: 12px; align-items: center; }
+  .vsrow .c { text-align: right; }
+  .vsrow .c.win { color: #39d353; font-weight: 700; }
+  .vsrow.head { border-top: none; font-size: 10px; color: #8b949e; letter-spacing: 0.06em; }
+  .topright { display: flex; align-items: center; gap: 8px; }
+  .chatbtn { position: relative; width: 32px; height: 32px; border: 1px solid #21262d; border-radius: 99px; color: #8b949e; display: flex; align-items: center; justify-content: center; }
+  .chatbtn:hover { border-color: #39d353; color: #39d353; }
+  .chatbtn svg { width: 16px; height: 16px; }
+  .chatbtn i { position: absolute; top: -4px; right: -4px; min-width: 15px; height: 15px; border-radius: 99px; background: #39d353; color: #000; font-size: 9px; font-style: normal; font-weight: 700; display: none; align-items: center; justify-content: center; padding: 0 3px; }
+  .chatbtn i.on { display: flex; }
+  .chatpage { position: fixed; inset: 0; z-index: 150; background: #080c10; display: flex; flex-direction: column; max-width: 640px; margin: 0 auto; }
+  .chathead { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid #21262d; font-family: 'Syne', sans-serif; font-size: 17px; }
+  .chathead .x { font-size: 24px; color: #8b949e; width: 34px; height: 34px; }
+  .chatlist { flex: 1; overflow-y: auto; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .composer { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid #21262d; background: #0d1117; }
+  .daydiv { text-align: center; font-size: 10px; letter-spacing: 0.1em; color: #6e7681; margin: 6px 0 2px; }
+  .msg { display: flex; gap: 8px; align-items: flex-end; }
+  .msg.me { flex-direction: row-reverse; }
+  .mcol { max-width: 78%; min-width: 0; display: flex; flex-direction: column; }
+  .msg.me .mcol { align-items: flex-end; }
+  .mname { font-size: 10px; color: #8b949e; margin: 0 4px 2px; }
+  .mname span { color: #484f58; margin-left: 6px; }
+  .bubble { background: #0d1117; border: 1px solid #21262d; border-radius: 14px; padding: 8px 11px; font-size: 13px; line-height: 1.4; cursor: pointer; overflow-wrap: anywhere; text-align: left; }
+  .msg.me .bubble { background: rgba(57,211,83,0.1); border-color: #196127; }
+  .mtext { white-space: pre-wrap; }
+  .cardmsg { min-width: 190px; }
+  .cardmsg small { display: block; font-size: 9px; letter-spacing: 0.1em; color: #39d353; }
+  .cardmsg b { display: block; font-family: 'Syne', sans-serif; font-size: 14px; margin: 2px 0; }
+  .cardmsg .big { font-size: 18px; font-weight: 500; }
+  .cardmsg.pr small { color: #e6a817; }
+  .cardmsg.pr .big { color: #e6a817; }
+  .cmline { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #c9d1d9; padding: 2px 0; }
+  .cmprs { font-size: 10px; color: #e6a817; margin-top: 4px; }
+  .rxrow { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 3px; }
+  .rx { font-size: 11px; border: 1px solid #30363d; border-radius: 99px; padding: 1px 8px; color: #8b949e; background: #0d1117; }
+  .rx.on { border-color: #39d353; color: #39d353; }
+  .muted { color: #8b949e; }
+
+  .top {
+    position: sticky; top: 0; z-index: 50; height: 54px; padding: 0 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(8,12,16,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid #21262d;
+  }
+  .logo { font-weight: 700; font-size: 13px; color: #39d353; letter-spacing: 0.05em; text-decoration: none; }
+  .logo span { color: #8b949e; font-weight: 300; }
+  .who { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #8b949e; padding: 4px 8px; border-radius: 99px; border: 1px solid #21262d; }
+  .who:hover { border-color: #39d353; color: #39d353; }
+  .av {
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+    border-radius: 50%; border: 1px solid; font-weight: 700; font-family: 'Syne', sans-serif;
+  }
+
+  .page { max-width: 640px; margin: 0 auto; padding: 22px 16px 0; }
+  .eyebrow { font-size: 11px; font-weight: 500; letter-spacing: 0.15em; color: #39d353; margin-bottom: 2px; }
+  .eyebrow::before { content: '// '; color: #484f58; }
+  h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; margin-bottom: 16px; }
+  h1 .accent { color: #39d353; }
+  h2 { font-family: 'Syne', sans-serif; font-size: 15px; font-weight: 700; margin: 24px 0 10px; display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  h2 small { font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 10px; color: #6e7681; letter-spacing: 0.05em; }
+  .headrow { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .fade { animation: fadein 0.25s ease; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card { background: #0d1117; border: 1px solid #21262d; border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .tiles.three { grid-template-columns: repeat(3, 1fr); }
+  @media (min-width: 520px) { .tiles.four { grid-template-columns: repeat(4, 1fr); } }
+  .tile { background: #0d1117; border: 1px solid #21262d; border-radius: 10px; padding: 12px; }
+  .tile b { display: block; font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: #39d353; line-height: 1.25; }
+  .tile span { font-size: 10px; letter-spacing: 0.08em; color: #6e7681; }
+  .tile small { display: block; font-size: 10px; color: #484f58; }
+
+  .chiprow { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+  .chip { font-size: 11px; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 7px 14px; }
+  .chip:hover { border-color: #39d353; color: #39d353; }
+  .chip.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
+  .datepill { background: #0d1117; border: 1px solid #21262d; border-radius: 8px; padding: 6px 8px; font-size: 12px; margin-top: 4px; }
+  .seg { display: flex; background: #0d1117; border: 1px solid #21262d; border-radius: 9px; padding: 3px; gap: 2px; margin-bottom: 10px; }
+  .seg button { flex: 1; font-size: 11px; padding: 9px 4px; border-radius: 6px; color: #8b949e; letter-spacing: 0.04em; }
+  .seg button.on { background: #161b22; color: #39d353; }
+  select.pick { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 9px 10px; font-size: 12px; margin-bottom: 10px; outline: none; }
+  select.pick:focus { border-color: #39d353; }
+
+  .exhead { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .exname { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; line-height: 1.3; }
+  .mtag { font-size: 9px; letter-spacing: 0.08em; color: #8b949e; border: 1px solid #30363d; border-radius: 99px; padding: 4px 10px; margin-top: 2px; }
+  .mtag:hover { border-color: #39d353; color: #39d353; }
+  .prtag { font-size: 10px; color: #e6a817; border: 1px solid rgba(230,168,23,0.35); padding: 1px 8px; border-radius: 99px; white-space: nowrap; }
+  .prior { font-size: 11px; color: #6e7681; margin: 4px 0 6px; }
+  .hint { background: rgba(88,217,245,0.05); border: 1px solid rgba(88,217,245,0.2); border-radius: 8px; padding: 8px 10px; margin: 6px 0 8px; font-size: 11px; color: #8b949e; line-height: 1.7; }
+  .hint b { color: #58d9f5; font-weight: 500; }
+  .setrow { display: grid; grid-template-columns: 24px 1fr auto; gap: 8px; align-items: center; padding: 11px 0; border-top: 1px solid #161b22; cursor: pointer; }
+  .setrow:hover .val { color: #39d353; }
+  .idx { width: 22px; height: 22px; border-radius: 50%; background: #161b22; color: #8b949e; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+  .setrow .val { font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .setrow .val u { text-decoration: none; color: #6e7681; font-size: 11px; font-weight: 400; margin-left: 4px; }
+  .rpe { color: #e6a817; font-size: 11px; font-weight: 400; margin-left: 6px; }
+  .badge { font-size: 9px; letter-spacing: 0.06em; border-radius: 99px; padding: 0 7px; border: 1px solid; margin-left: 6px; font-weight: 400; }
+  .badge.warm { color: #58d9f5; border-color: rgba(88,217,245,0.4); }
+  .dropchain { font-size: 11px; color: #a78bfa; font-weight: 400; margin-top: 2px; }
+  .dropsbox { margin-top: 8px; padding: 8px; border: 1px solid rgba(167,139,250,0.3); border-radius: 8px; }
+  .dropsbox .droprow { display: grid; grid-template-columns: 18px 1fr 1fr; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .dropsbox .arrow { color: #a78bfa; text-align: center; }
+  .dropsbox input { width: 100%; box-sizing: border-box; }
+  .adddrop { font-size: 11px; color: #a78bfa; padding: 8px 0; width: 100%; border: 1px dashed rgba(167,139,250,0.4); border-radius: 6px; }
+  .badge.drop { color: #a78bfa; border-color: rgba(167,139,250,0.4); }
+  .badge.fail { color: #f87171; border-color: rgba(248,113,113,0.4); }
+  .star { color: #e6a817; margin-left: 4px; }
+  .e1 { font-size: 10px; color: #6e7681; }
+  .setform { display: grid; grid-template-columns: 1fr 1fr 1fr 48px; gap: 8px; margin-top: 10px; align-items: end; }
+  .fld span { display: block; font-size: 9px; letter-spacing: 0.1em; color: #6e7681; margin-bottom: 3px; }
+  .fld input, .fld select { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 10px 4px; font-size: 16px; font-weight: 500; text-align: center; outline: none; }
+  .fld select { text-align-last: center; padding: 10px 2px; font-size: 15px; }
+  .fld input:focus, .fld select:focus { border-color: #39d353; }
+  .addbtn { height: 44px; border-radius: 8px; background: #39d353; color: #000; font-size: 22px; font-weight: 700; transition: all 0.2s; }
+  .addbtn:hover { background: #4ef570; box-shadow: 0 0 18px rgba(57,211,83,0.3); }
+  .typebar { display: flex; gap: 4px; margin-top: 8px; }
+  .morebtn { display: block; width: 100%; text-align: center; margin-top: 10px; font-size: 11px; letter-spacing: 0.06em; color: #8b949e; border: 1px solid #21262d; border-radius: 8px; padding: 9px 0; }
+  .morebtn:hover { border-color: #39d353; color: #39d353; }
+  .morepanel { margin-top: 6px; }
+  .typebar button { flex: 1; font-size: 11px; padding: 10px 0; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
+  .typebar button.on { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.06); }
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .exnote { font-size: 11px; color: #e6a817; margin-bottom: 8px; cursor: pointer; }
+  .sstag { font-size: 9px; letter-spacing: 0.08em; color: #58d9f5; border: 1px solid rgba(88,217,245,0.3); border-radius: 99px; padding: 0 8px; margin-left: 6px; }
+  textarea.field { resize: vertical; font-family: inherit; }
+  .tools button { font-size: 11px; color: #8b949e; border: 1px solid #21262d; border-radius: 8px; padding: 10px 14px; }
+  .tools button:hover { border-color: #39d353; color: #39d353; }
+  .addex { width: 100%; padding: 15px; border: 1px dashed #30363d; border-radius: 12px; color: #8b949e; font-size: 12px; letter-spacing: 0.08em; transition: all 0.2s; }
+  .addex:hover { border-color: #39d353; color: #39d353; background: rgba(57,211,83,0.04); }
+  .banner { border: 1px solid #196127; background: rgba(57,211,83,0.06); border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .banner b { font-family: 'Syne', sans-serif; font-size: 15px; display: block; }
+  .banner small { font-size: 10px; color: #6e7681; letter-spacing: 0.05em; }
+  .btn.sm { width: auto; padding: 8px 14px; font-size: 11px; }
+
+  .chartbox { position: relative; width: 100%; }
+  .minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #161b22; }
+  .minis b { display: block; font-size: 15px; font-weight: 500; }
+  .minis span { font-size: 9px; letter-spacing: 0.08em; color: #6e7681; }
+  .heat { display: grid; grid-auto-flow: column; grid-template-columns: repeat(12, 1fr); grid-template-rows: repeat(7, auto); gap: 3px; }
+  .heat i { display: block; aspect-ratio: 1; border-radius: 3px; background: #161b22; }
+  .heat i.l1 { background: #0e4429; }
+  .heat i.l2 { background: #006d32; }
+  .heat i.l3 { background: #26a641; }
+  .heat i.l4 { background: #39d353; }
+  .heat i.fut { opacity: 0.25; }
+  .legend { display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 8px; font-size: 10px; color: #6e7681; }
+  .legend i { width: 10px; height: 10px; border-radius: 2px; display: block; background: #161b22; }
+
+  .lrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 9px 0; border-top: 1px solid #161b22; }
+  .lrow:first-child { border-top: none; }
+  .lrow .l { min-width: 0; }
+  .lrow .l div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lrow .r { text-align: right; flex-shrink: 0; font-weight: 500; }
+  .lrow small { display: block; font-size: 10px; color: #6e7681; font-weight: 400; }
+  .lbname { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+  .lbname em { font-style: normal; font-size: 9px; letter-spacing: 0.08em; color: #39d353; border: 1px solid #196127; border-radius: 99px; padding: 0 6px; }
+  .lb { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 10px 8px; border-top: 1px solid #161b22; border-radius: 8px; }
+  .lb:first-of-type { border-top: none; }
+  .lb.me { background: rgba(57,211,83,0.06); }
+  .rank { width: 24px; height: 24px; border-radius: 50%; background: #161b22; color: #8b949e; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .rank.r1 { background: rgba(230,168,23,0.18); color: #e6a817; }
+  .rank.r2 { background: rgba(192,200,208,0.15); color: #c0c8d0; }
+  .rank.r3 { background: rgba(205,127,50,0.18); color: #cd7f32; }
+  .bar { height: 4px; background: #161b22; border-radius: 99px; margin-top: 6px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 99px; transition: width 0.5s ease; }
+  .lbval { text-align: right; font-weight: 500; font-size: 14px; }
+  .lbval small { display: block; font-size: 9px; color: #6e7681; font-weight: 400; letter-spacing: 0.06em; }
+  .feed { display: flex; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid #161b22; font-size: 12px; }
+  .feed:first-child { border-top: none; }
+  .feed .t { margin-left: auto; font-size: 10px; color: #484f58; flex-shrink: 0; }
+  .kudos { font-size: 11px; border: 1px solid #30363d; border-radius: 99px; padding: 0 10px; color: #8b949e; flex-shrink: 0; }
+  .kudos.on { border-color: #e6a817; color: #e6a817; }
+  .pill { font-size: 9px; letter-spacing: 0.06em; border-radius: 99px; padding: 0 8px; border: 1px solid; white-space: nowrap; }
+  .pill.gym { color: #39d353; border-color: #196127; background: rgba(57,211,83,0.08); }
+  .pill.slack { color: #f87171; border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.08); }
+  .pill.ok { color: #8b949e; border-color: #30363d; }
+  .pill.off { color: #58d9f5; border-color: rgba(88,217,245,0.3); }
+  .pill.done { color: #39d353; border-color: #196127; }
+  .chal { border-top: 1px solid #161b22; padding-top: 12px; margin-top: 12px; }
+  .chal:first-of-type { border-top: none; padding-top: 0; margin-top: 0; }
+  .chalhead { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .chalhead b { font-family: 'Syne', sans-serif; font-size: 14px; }
+
+  .whochips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .wchip { display: flex; align-items: center; gap: 6px; font-size: 11px; border: 1px solid #21262d; border-radius: 99px; padding: 3px 10px 3px 4px; color: #8b949e; }
+  .wchip.all { padding: 3px 12px; }
+  .wchip.on { border-color: #39d353; color: #39d353; }
+  .monthnav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; }
+  .monthnav button { width: 36px; height: 36px; border: 1px solid #21262d; border-radius: 8px; color: #8b949e; font-size: 16px; }
+  .monthnav button:hover { border-color: #39d353; color: #39d353; }
+  .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+  .cal .wh { text-align: center; font-size: 9px; letter-spacing: 0.08em; color: #6e7681; padding: 2px 0; }
+  .day { aspect-ratio: 1 / 1.05; background: #0d1117; border: 1px solid #161b22; border-radius: 8px; padding: 4px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; font-size: 10px; color: #8b949e; text-align: left; min-width: 0; overflow: hidden; }
+  .day:hover { border-color: #30363d; }
+  .day.out { visibility: hidden; }
+  .day.today { border-color: #39d353; color: #39d353; }
+  .day.fut { color: #6e7681; }
+  .day.multi { aspect-ratio: auto; min-height: 64px; justify-content: flex-start; gap: 2px; }
+  .pline { font-size: 8px; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+  .pline i { display: inline-block; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid; margin-right: 3px; vertical-align: middle; box-sizing: border-box; }
+  .wgrid { display: grid; grid-template-columns: 58px repeat(7, minmax(0, 1fr)); gap: 3px; align-items: stretch; }
+  .wgrid .wh { text-align: center; font-size: 9px; letter-spacing: 0.06em; color: #6e7681; padding: 2px 0; }
+  .wgrid .wh.today { color: #39d353; }
+  .wgrid .who { display: flex; align-items: center; gap: 4px; font-size: 10px; padding: 0; border: none; border-radius: 0; min-width: 0; overflow: hidden; }
+  .wgrid .who span.nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wcell { min-height: 30px; border: 1px solid #161b22; background: #0d1117; border-radius: 6px; font-size: 9px; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; padding: 0 1px; color: #484f58; }
+  .wcell.today { border-color: #39d353; }
+  .wcell.plan { border-style: dashed; }
+  .dots { display: flex; flex-wrap: wrap; gap: 2px; width: 100%; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; display: block; border: 1.5px solid transparent; }
+  .dots i.ring { background: transparent; }
+  .dlabel { font-size: 8px; line-height: 1.1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #8b949e; width: 100%; }
+  .calkey { display: flex; gap: 14px; margin-top: 10px; font-size: 10px; color: #6e7681; }
+  .calkey i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; border: 1.5px solid #8b949e; }
+  .calkey i.f { background: #8b949e; }
+  .wk { display: grid; grid-template-columns: 44px 1fr; gap: 8px; align-items: center; margin-bottom: 4px; }
+  .wk select.pick { margin-bottom: 0; }
+  .rcard { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid #161b22; cursor: pointer; }
+  .rcard:first-child { border-top: none; }
+  .rcard b { font-family: 'Syne', sans-serif; font-size: 14px; display: block; }
+  .rcard small { font-size: 10px; color: #6e7681; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+  .xrow { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-top: 1px solid #161b22; }
+  .xrow span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .xrow button { width: 30px; height: 30px; border: 1px solid #21262d; border-radius: 6px; color: #8b949e; }
+  .xrow button:hover { border-color: #39d353; color: #39d353; }
+  .plates { font-size: 13px; line-height: 2; margin-top: 8px; }
+  .platechip { display: inline-block; border: 1px solid #39d353; color: #39d353; border-radius: 6px; padding: 0 8px; margin: 2px 4px 2px 0; }
+  .inrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+
+  .formrow { display: grid; grid-template-columns: 1fr 1fr 48px; gap: 8px; align-items: end; }
+  .formrow .fld input[type=date] { font-size: 13px; padding: 11px 6px; }
+  .nudge { font-size: 11px; color: #e6a817; margin-bottom: 10px; }
+  .empty { text-align: center; padding: 28px 12px; }
+  .empty b { font-family: 'Syne', sans-serif; font-size: 16px; display: block; margin-bottom: 4px; }
+  .empty p { color: #8b949e; font-size: 12px; }
+  .errbox { border-color: rgba(248,113,113,0.4); }
+  .errbox p { color: #f87171; font-size: 12px; margin-bottom: 8px; }
+
+  .tabs { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: rgba(8,12,16,0.96); backdrop-filter: blur(12px); border-top: 1px solid #21262d; padding-bottom: env(safe-area-inset-bottom); }
+  .tabs div { display: flex; max-width: 640px; margin: 0 auto; }
+  .tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 0 8px; font-size: 9px; letter-spacing: 0.05em; color: #6e7681; position: relative; transition: color 0.2s; }
+  .tabs button svg { width: 21px; height: 21px; }
+  .tabs button.on { color: #39d353; }
+  .tabs button.on::before { content: ''; position: absolute; top: 0; left: 28%; right: 28%; height: 2px; background: #39d353; border-radius: 0 0 4px 4px; box-shadow: 0 0 10px rgba(57,211,83,0.6); }
+
+  .rest { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(66px + env(safe-area-inset-bottom)); width: calc(100% - 24px); max-width: 616px; z-index: 55; display: none; align-items: center; gap: 10px; background: #161b22; border: 1px solid #196127; border-radius: 12px; padding: 10px 12px; overflow: hidden; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+  .rest.on { display: flex; }
+  .restfill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(57,211,83,0.12); transition: width 0.25s linear; }
+  .rest > * { position: relative; }
+  .rest .rl { font-size: 10px; letter-spacing: 0.1em; color: #8b949e; }
+  .rest .rt { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; color: #39d353; margin-right: auto; }
+  .rest button { font-size: 11px; border: 1px solid #30363d; border-radius: 8px; padding: 6px 10px; background: #0d1117; }
+  .rest button:hover { border-color: #39d353; color: #39d353; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(130px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(10px); opacity: 0; pointer-events: none; z-index: 300; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 10px 16px; font-size: 12px; max-width: calc(100% - 32px); text-align: center; transition: all 0.25s; }
+  .toast.on { opacity: 1; transform: translateX(-50%); }
+  .toast.err { border-color: #f87171; color: #f87171; }
+  .toast.pr { border-color: #e6a817; color: #e6a817; box-shadow: 0 0 24px rgba(230,168,23,0.25); }
+
+  .sheetbg { position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+  .sheet { width: 100%; max-width: 640px; max-height: 86vh; overflow: auto; background: #0d1117; border: 1px solid #30363d; border-bottom: none; border-radius: 16px 16px 0 0; padding: 16px 16px calc(20px + env(safe-area-inset-bottom)); animation: up 0.2s ease; }
+  @keyframes up { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .sheethead { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-family: 'Syne', sans-serif; font-size: 16px; }
+  .sheethead .x { font-size: 22px; color: #8b949e; width: 32px; height: 32px; }
+  .sheet h3 { font-size: 10px; letter-spacing: 0.12em; color: #6e7681; font-weight: 500; margin: 16px 0 8px; }
+  .search { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 11px 12px; font-size: 16px; outline: none; margin-bottom: 8px; }
+  .search:focus { border-color: #39d353; }
+  .prow { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; text-align: left; padding: 11px 6px; border-top: 1px solid #161b22; font-size: 13px; }
+  .prow:hover { background: #161b22; }
+  .prow em { font-style: normal; font-size: 10px; color: #6e7681; }
+  .prow.new { color: #39d353; border-top: none; }
+
+  .btn { width: 100%; font-size: 12px; font-weight: 500; letter-spacing: 0.08em; padding: 12px; border-radius: 8px; background: #39d353; color: #000; border: 1px solid #39d353; transition: all 0.2s; }
+  .btn:hover { background: #4ef570; box-shadow: 0 0 20px rgba(57,211,83,0.25); }
+  .btn.ghost { background: transparent; color: #8b949e; border: 1px solid #30363d; }
+  .btn.ghost:hover { border-color: #39d353; color: #39d353; box-shadow: none; }
+  .btn.danger:hover { border-color: #f87171; color: #f87171; }
+  .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .field { width: 100%; background: #080c10; border: 1px solid #21262d; border-radius: 8px; padding: 12px; font-size: 16px; outline: none; margin-bottom: 8px; }
+  .field:focus { border-color: #39d353; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 20px; }
+  .member { display: flex; align-items: center; gap: 8px; border: 1px solid #21262d; background: #0d1117; border-radius: 99px; padding: 4px 12px 4px 5px; font-size: 12px; }
+  .member:hover { border-color: #39d353; color: #39d353; }
+  .loginerr { color: #f87171; font-size: 12px; min-height: 18px; margin-top: 8px; }
+  .sub { color: #8b949e; font-size: 12px; margin: -8px 0 18px; }
+  .bigcal { text-align: center; padding: 6px 0 10px; }
+  .bigcal b { display: block; font-family: 'Syne', sans-serif; font-size: 44px; font-weight: 800; color: #39d353; line-height: 1.1; }
+  .bigcal b.over { color: #f87171; }
+  .bigcal span { display: block; font-size: 10px; letter-spacing: 0.14em; color: #6e7681; }
+  .bigcal small { display: block; font-size: 11px; color: #8b949e; margin-top: 2px; }
+  .bar.big { height: 8px; margin: 4px 0 14px; }
+  .macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .macro .mtop { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; font-size: 9px; letter-spacing: 0.1em; color: #6e7681; }
+  .macro .mtop b { font-size: 15px; color: #e6edf3; font-weight: 600; letter-spacing: 0; }
+  .macro .mtop small { font-size: 10px; letter-spacing: 0; color: #6e7681; }
+  .frow { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid #161b22; }
+  .frow:first-child { border-top: none; }
+  .frow .l { min-width: 0; }
+  .frow .l small { display: block; color: #6e7681; font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .frow .r { text-align: right; font-size: 13px; white-space: nowrap; }
+  .frow .r small { display: block; color: #6e7681; font-size: 10px; }
+  .linkbtn { display: block; margin: 8px auto 0; font-size: 11px; color: #58d9f5; padding: 8px; }
+  .linkrow { display: block; text-align: center; text-decoration: none; margin-top: 8px; }
+  .chk { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #8b949e; margin: 12px 0; }
+  .chk input { width: 18px; height: 18px; accent-color: #39d353; }
+  .scanbox { position: relative; border-radius: 12px; overflow: hidden; border: 1px solid #21262d; background: #000; aspect-ratio: 4 / 3; }
+  .scanvid { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .scanline { position: absolute; left: 10%; right: 10%; top: 50%; height: 2px; background: rgba(57,211,83,0.8); box-shadow: 0 0 12px rgba(57,211,83,0.8); }
+  .ingrow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .ingrow select { flex: 1; min-width: 0; }
+
+</style>
+</head>
+<body>
+
+<div id="login" class="page hidden">
+  <div class="eyebrow">FOOD LOG</div>
+  <h1>Welcome <span class="accent">back</span></h1>
+  <p class="sub">Same username and PIN as the gym app. New here? Make your profile in the gym app first, it needs the invite code.</p>
+  <div class="card">
+    <input id="user" class="field" placeholder="username" autocapitalize="none" autocomplete="off">
+    <input id="pin" class="field" placeholder="4-digit PIN" inputmode="numeric" maxlength="4" type="password">
+    <button id="loginBtn" class="btn">log in</button>
+    <div class="loginerr" id="loginErr"></div>
+  </div>
+  <a href="/gym/" class="linkbtn">open the gym app</a>
+</div>
+
+<div id="app" class="hidden">
+  <header class="top">
+    <a href="/" class="logo">AM<span>.net/food</span></a>
+    <div class="topright"><button id="who" class="who" title="Account"></button></div>
+  </header>
+  <main id="view" class="page"></main>
+  <nav id="tabs" class="tabs">
+    <div>
+      <button data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 3v7a3 3 0 0 0 3 3v8M7 3v7M10 3v7a3 3 0 0 1-3 3"/><path d="M17 3c-2 2-3 4.500-3 8h3v10"/></svg>TODAY</button>
+      <button data-tab="foods"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16M4 12h16M4 19h16"/></svg>FOODS</button>
+      <button data-tab="trends"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>TRENDS</button>
+    </div>
+  </nav>
+</div>
+
+<div id="sheet" class="sheetbg hidden"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://krlhvndeqckzypobggqk.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_HFudOLr6cy-pMopGIeSczw_cm-fBlmB';
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const LB_PER_KG = 2.20462;
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  me: null, unit: 'lb', tab: 'today', date: '', foods: [], log: [], targets: null, bodyweights: [],
+  addTab: 'search', trendDays: 30, foodFilter: '', pending: [], loaded: false, error: ''
+};
+
+/* tiny helpers */
+
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  if (props) {
+    for (const k in props) {
+      const v = props[k];
+      if (v == null || v === false) continue;
+      if (k === 'class') e.className = v;
+      else if (k === 'text') e.textContent = v;
+      else if (k === 'value') e.value = v;
+      else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+      else e.setAttribute(k, v === true ? '' : v);
+    }
+  }
+  kids.flat(Infinity).forEach((c) => {
+    if (c == null || c === false) return;
+    e.append(c.nodeType ? c : document.createTextNode(String(c)));
+  });
+  return e;
+}
+
+/* replaceChildren that accepts nested arrays and skips empty values */
+function fill(el, ...kids) {
+  el.replaceChildren(...kids.flat(Infinity).filter((c) => c != null && c !== false).map((c) => (c.nodeType ? c : document.createTextNode(String(c)))));
+}
+
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+function lsDel(k) { try { localStorage.removeItem(k); } catch (e) {} }
+
+const key = (s) => String(s).trim().toLowerCase();
+const fmt = (n) => Math.round(Number(n) || 0).toLocaleString();
+const r1 = (n) => Math.round((Number(n) || 0) * 10) / 10;
+const num = (v) => { const x = parseFloat(v); return Number.isFinite(x) ? x : null; };
+const toDisp = (lb) => (state.unit === 'kg' ? Number(lb) / LB_PER_KG : Number(lb));
+
+/* dates */
+
+function today() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+function parseD(s) { const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function fmtD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function addDays(s, n) { const d = parseD(s); d.setDate(d.getDate() + n); return fmtD(d); }
+function shortDate(s) { return parseD(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+
+/* toast, sheet, segmented control */
+
+let toastTimer = null;
+function toast(msg, type) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.className = 'toast'; }, 2600);
+}
+function seg(opts, cur, pick) {
+  return h('div', { class: 'seg' }, opts.map((o) => h('button', { class: o[0] === cur ? 'on' : '', onclick: () => pick(o[0]), text: o[1] })));
+}
+function emptyCard(title, sub) {
+  return h('div', { class: 'card empty' }, h('b', { text: title }), h('p', { text: sub }));
+}
+function openSheet(content) {
+  const s = $('sheet');
+  s.replaceChildren(h('div', { class: 'sheet', onclick: (e) => e.stopPropagation() }, content));
+  s.onclick = closeSheet;
+  s.classList.remove('hidden');
+}
+function closeSheet() {
+  stopScan();
+  $('sheet').classList.add('hidden');
+  $('sheet').replaceChildren();
+}
+function sheetHead(title) {
+  return h('div', { class: 'sheethead' }, h('b', { text: title }), h('button', { class: 'x', onclick: closeSheet, text: '×' }));
+}
+function downloadText(name, text, mime) {
+  const blob = new Blob([text], { type: mime || 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: name });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const csvCell = (v) => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+
+/* charts */
+
+const liveCharts = [];
+function destroyCharts() { while (liveCharts.length) liveCharts.pop().destroy(); }
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.color = '#8b949e';
+  Chart.defaults.font.family = "'JetBrains Mono', monospace";
+  Chart.defaults.font.size = 10;
+}
+const TIP = { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1, titleColor: '#e6edf3', bodyColor: '#c9d1d9', padding: 10, cornerRadius: 8 };
+function axes(yExtra) {
+  return {
+    x: { grid: { display: false }, border: { color: '#21262d' }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 6 } },
+    y: Object.assign({ grid: { color: '#161b22' }, border: { display: false }, ticks: { maxTicksLimit: 5 } }, yExtra || {})
+  };
+}
+function chartBox(config, height) {
+  const canvas = h('canvas');
+  const box = h('div', { class: 'chartbox', style: 'height:' + (height || 200) + 'px' }, canvas);
+  state.pending.push(() => {
+    if (typeof Chart === 'undefined') { box.replaceChildren(h('div', { class: 'muted', text: 'Charts could not load (offline?).' })); return; }
+    liveCharts.push(new Chart(canvas, config));
+  });
+  return box;
+}
+
+/* macro math */
+
+function sumOf(rows) {
+  const t = { cal: 0, p: 0, c: 0, f: 0, fiber: 0, n: rows.length };
+  rows.forEach((r) => { t.cal += Number(r.calories) || 0; t.p += Number(r.protein) || 0; t.c += Number(r.carbs) || 0; t.f += Number(r.fat) || 0; t.fiber += Number(r.fiber) || 0; });
+  return t;
+}
+const dayRows = (date) => state.log.filter((r) => r.date === date);
+function dayTotals(date) { return sumOf(dayRows(date)); }
+
+/* Open Food Facts */
+
+const OFF_FIELDS = 'code,product_name,brands,serving_size,serving_quantity,nutriments';
+
+function offToFood(p) {
+  if (!p) return null;
+  const n = p.nutriments || {};
+  const sq = num(p.serving_quantity);
+  const per = (k) => {
+    const s = num(n[k + '_serving']);
+    if (s !== null) return s;
+    const d = num(n[k + '_100g']);
+    if (d === null) return null;
+    return sq ? (d * sq) / 100 : d;
+  };
+  let kcal = per('energy-kcal');
+  if (kcal === null) {
+    const kj = num(n['energy_serving']) !== null ? num(n['energy_serving']) : (num(n['energy_100g']) !== null ? (sq ? (num(n['energy_100g']) * sq) / 100 : num(n['energy_100g'])) : null);
+    if (kj !== null) kcal = kj / 4.184;
+  }
+  const name = String(p.product_name || '').trim();
+  if (!name || kcal === null) return null;
+  const haveServing = num(n['energy-kcal_serving']) !== null || !!sq;
+  return {
+    name,
+    brand: String(p.brands || '').split(',')[0].trim(),
+    barcode: p.code ? String(p.code) : '',
+    serving_label: haveServing && p.serving_size ? String(p.serving_size).trim() : '100 g',
+    serving_g: haveServing ? sq : 100,
+    calories: r1(kcal),
+    protein: r1(per('proteins') || 0),
+    carbs: r1(per('carbohydrates') || 0),
+    fat: r1(per('fat') || 0),
+    fiber: per('fiber') === null ? null : r1(per('fiber'))
+  };
+}
+
+async function offSearch(q) {
+  const url = 'https://world.openfoodfacts.org/cgi/search.pl?search_terms=' + encodeURIComponent(q) + '&search_simple=1&action=process&json=1&page_size=20&fields=' + OFF_FIELDS;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Search failed (' + res.status + ')');
+  const j = await res.json();
+  return (j.products || []).map(offToFood).filter(Boolean);
+}
+
+async function offBarcode(code) {
+  const url = 'https://world.openfoodfacts.org/api/v2/product/' + encodeURIComponent(code) + '.json?fields=' + OFF_FIELDS;
+  const res = await fetch(url);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Lookup failed (' + res.status + ')');
+  const j = await res.json();
+  if (j.status !== 1 || !j.product) return null;
+  j.product.code = j.product.code || code;
+  return offToFood(j.product);
+}
+
+/* nutrition label text parser (used after OCR) */
+
+function parseLabel(raw) {
+  const text = String(raw || '').replace(/\r/g, '').replace(/\bO\s?g\b/g, '0g').replace(/(\d)\s+g\b/g, '$1g');
+  const grab = (re) => { const m = text.match(re); return m ? parseFloat(m[1]) : null; };
+  const out = {
+    calories: grab(/calories(?!\s*from)\D{0,12}(\d{1,4})/i),
+    fat: grab(/total\s*fat\D{0,6}(\d+(?:\.\d+)?)\s*g/i),
+    carbs: grab(/total\s*carb\w*\D{0,6}(\d+(?:\.\d+)?)\s*g/i),
+    protein: grab(/protein\D{0,6}(\d+(?:\.\d+)?)\s*g/i),
+    fiber: grab(/fiber\D{0,6}(\d+(?:\.\d+)?)\s*g/i),
+    serving_label: null
+  };
+  const sm = text.match(/serving\s*size[:\s]*([^\n]{2,40})/i);
+  if (sm) out.serving_label = sm[1].replace(/\s{2,}/g, ' ').trim();
+  return out;
+}
+
+/* lazy script loader */
+
+const loaded = {};
+function loadScript(src) {
+  if (loaded[src]) return loaded[src];
+  loaded[src] = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload = resolve;
+    s.onerror = () => { delete loaded[src]; reject(new Error('Could not load ' + src)); };
+    document.head.appendChild(s);
+  });
+  return loaded[src];
+}
+/* data */
+
+async function fetchAll(table, cols, build) {
+  let all = [];
+  let from = 0;
+  const size = 1000;
+  for (;;) {
+    let q = db.from(table).select(cols);
+    if (build) q = build(q);
+    const res = await q.range(from, from + size - 1);
+    if (res.error) throw res.error;
+    all = all.concat(res.data);
+    if (res.data.length < size) break;
+    from += size;
+  }
+  return all;
+}
+
+async function loadAll() {
+  const me = state.me.id;
+  const since = addDays(today(), -400);
+  const r = await Promise.all([
+    db.from('profiles').select('id, username, unit').eq('id', me).maybeSingle(),
+    fetchAll('foods', '*', (q) => q.eq('profile_id', me).order('created_at').order('id')),
+    fetchAll('food_log', '*', (q) => q.eq('profile_id', me).gte('date', since).order('date').order('created_at')),
+    db.from('food_targets').select('*').eq('profile_id', me).maybeSingle(),
+    fetchAll('bodyweights', 'id, profile_id, date, weight', (q) => q.eq('profile_id', me).order('date').order('id'))
+  ]);
+  if (r[0].error) throw r[0].error;
+  if (!r[0].data) { const e = new Error('Account not found'); e.gone = true; throw e; }
+  if (r[3].error) throw r[3].error;
+  state.unit = r[0].data.unit === 'kg' ? 'kg' : 'lb';
+  state.foods = r[1];
+  state.log = r[2];
+  state.targets = r[3].data;
+  state.bodyweights = r[4];
+}
+
+async function refreshData(showLoading) {
+  if (!state.me) return;
+  try {
+    await loadAll();
+    state.error = '';
+  } catch (e) {
+    if (e.gone) { logout(); return; }
+    state.error = e.message || 'Could not reach the database';
+  }
+  state.loaded = true;
+  render();
+}
+
+/* actions */
+
+async function addLog(food, servings, vals, date) {
+  const row = {
+    profile_id: state.me.id, date: date || state.date, name: food.name, servings: r1(servings) || 1,
+    serving_label: food.serving_label || null,
+    calories: r1(vals.calories * servings), protein: r1(vals.protein * servings), carbs: r1(vals.carbs * servings), fat: r1(vals.fat * servings),
+    fiber: vals.fiber == null ? null : r1(vals.fiber * servings), food_id: food.id || null
+  };
+  const res = await db.from('food_log').insert(row).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return null; }
+  state.log.push(res.data);
+  if (food.id) touchFood(food.id);
+  return res.data;
+}
+
+async function touchFood(id) {
+  const t = today();
+  const f = state.foods.find((x) => x.id === id);
+  if (f) f.last_used = t;
+  db.from('foods').update({ last_used: t }).eq('id', id).eq('profile_id', state.me.id).then(() => {});
+}
+
+async function saveFood(row, id) {
+  const body = Object.assign({}, row);
+  let res;
+  if (id) res = await db.from('foods').update(body).eq('id', id).eq('profile_id', state.me.id).select().single();
+  else res = await db.from('foods').insert(Object.assign({ profile_id: state.me.id }, body)).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return null; }
+  state.foods = state.foods.filter((f) => f.id !== res.data.id).concat([res.data]);
+  return res.data;
+}
+
+async function deleteFood(id) {
+  const res = await db.from('foods').delete().eq('id', id).eq('profile_id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.foods = state.foods.filter((f) => f.id !== id);
+  state.log.forEach((l) => { if (l.food_id === id) l.food_id = null; });
+  return true;
+}
+
+async function updateLog(id, patch) {
+  const res = await db.from('food_log').update(patch).eq('id', id).eq('profile_id', state.me.id).select().single();
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  const i = state.log.findIndex((l) => l.id === id);
+  if (i >= 0) state.log[i] = res.data;
+  return true;
+}
+
+async function deleteLog(id) {
+  const res = await db.from('food_log').delete().eq('id', id).eq('profile_id', state.me.id);
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.log = state.log.filter((l) => l.id !== id);
+  return true;
+}
+
+async function saveTargets(t) {
+  const row = { profile_id: state.me.id, calories: t.calories, protein: t.protein, carbs: t.carbs, fat: t.fat, updated_at: new Date().toISOString() };
+  const res = await db.from('food_targets').upsert(row, { onConflict: 'profile_id' });
+  if (res.error) { toast(res.error.message, 'err'); return false; }
+  state.targets = row;
+  return true;
+}
+
+async function copyFromDay(src, dst) {
+  const rows = state.log.filter((l) => l.date === src);
+  if (!rows.length) return;
+  const body = rows.map((l) => ({
+    profile_id: state.me.id, date: dst, name: l.name, servings: l.servings, serving_label: l.serving_label,
+    calories: l.calories, protein: l.protein, carbs: l.carbs, fat: l.fat, fiber: l.fiber, food_id: l.food_id
+  }));
+  const res = await db.from('food_log').insert(body).select();
+  if (res.error) { toast(res.error.message, 'err'); return; }
+  state.log = state.log.concat(res.data);
+  toast('Copied ' + rows.length + ' entries from ' + shortDate(src));
+  render();
+}
+
+async function clearFoodData() {
+  const me = state.me.id;
+  const a = await db.from('food_log').delete().eq('profile_id', me);
+  const b = await db.from('foods').delete().eq('profile_id', me);
+  const c = await db.from('food_targets').delete().eq('profile_id', me);
+  const err = a.error || b.error || c.error;
+  if (err) { toast(err.message, 'err'); return false; }
+  state.log = [];
+  state.foods = [];
+  state.targets = null;
+  return true;
+}
+/* scanner */
+
+const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+const TESS_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+const scanner = { active: false, stream: null, timer: null, reader: null };
+
+function stopScan() {
+  scanner.active = false;
+  clearTimeout(scanner.timer);
+  try { if (scanner.reader) scanner.reader.reset(); } catch (e) { /* ignore */ }
+  scanner.reader = null;
+  if (scanner.stream) { scanner.stream.getTracks().forEach((t) => t.stop()); scanner.stream = null; }
+}
+
+async function startScan(video, status, onCode) {
+  stopScan();
+  scanner.active = true;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+    if (!scanner.active) { stream.getTracks().forEach((t) => t.stop()); return; }
+    scanner.stream = stream;
+    video.srcObject = stream;
+    await video.play();
+    if ('BarcodeDetector' in window) {
+      const det = new window.BarcodeDetector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] });
+      const tick = async () => {
+        if (!scanner.active) return;
+        try {
+          const codes = await det.detect(video);
+          if (codes.length && scanner.active) { onCode(codes[0].rawValue); return; }
+        } catch (e) { /* keep trying */ }
+        scanner.timer = setTimeout(tick, 200);
+      };
+      tick();
+    } else {
+      status.textContent = 'Loading scanner...';
+      await loadScript(ZXING_URL);
+      if (!scanner.active) return;
+      const reader = new window.ZXing.BrowserMultiFormatReader();
+      scanner.reader = reader;
+      status.textContent = 'Point the camera at a barcode.';
+      reader.decodeFromStream(stream, video, (result) => {
+        if (result && scanner.active) onCode(result.getText());
+      });
+    }
+  } catch (e) {
+    status.textContent = 'Camera not available (' + (e && e.name ? e.name : 'error') + '). Type the barcode below instead.';
+  }
+}
+
+async function lookupBarcode(raw) {
+  const code = String(raw || '').replace(/\D/g, '');
+  if (code.length < 6) { toast('That does not look like a barcode', 'err'); return; }
+  const variants = [code];
+  if (code.length === 12) variants.push('0' + code);
+  if (code.length === 13 && code[0] === '0') variants.push(code.slice(1));
+  const mine = state.foods.find((f) => f.barcode && variants.includes(f.barcode));
+  if (mine) { openServing(mine, {}); return; }
+  toast('Looking up ' + code + '...');
+  let found = null;
+  try {
+    for (const v of variants) {
+      found = await offBarcode(v);
+      if (found) break;
+    }
+  } catch (e) {
+    toast(e.message + '. Check your connection.', 'err');
+    return;
+  }
+  if (found) { found.barcode = code; openServing(found, { save: true }); return; }
+  toast('Not in the database. Enter it once and it is saved for next time.');
+  openServing({ name: '', brand: '', barcode: code, serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, { save: true, note: 'Barcode ' + code + ' was not found. Type the numbers from the label.' });
+}
+
+async function ocrLabel(file, status) {
+  status.textContent = 'Loading the reader (first time takes a while)...';
+  await loadScript(TESS_URL);
+  const worker = await window.Tesseract.createWorker('eng');
+  status.textContent = 'Reading the label...';
+  try {
+    const ret = await worker.recognize(file);
+    return ret.data.text || '';
+  } finally {
+    try { await worker.terminate(); } catch (e) { /* ignore */ }
+  }
+}
+
+/* render */
+
+function render() {
+  destroyCharts();
+  state.pending = [];
+  document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.tab === state.tab));
+  const view = $('view');
+  if (!state.me) return;
+  if (!state.loaded) { view.replaceChildren(emptyCard('Loading', 'Pulling your food log...')); return; }
+  if (state.error) {
+    const missing = /does not exist|schema cache|food_log|foods|food_targets/i.test(state.error);
+    view.replaceChildren(h('div', { class: 'card errbox' },
+      h('p', { text: state.error }),
+      h('p', { class: 'muted', text: missing ? 'Looks like setup10.sql has not been run yet. Run it in the Supabase SQL Editor, then retry.' : 'Could not reach the database.' }),
+      h('button', { class: 'btn ghost', onclick: () => refreshData(true), text: 'retry' })
+    ));
+    return;
+  }
+  const y = window.scrollY || 0;
+  const fn = { today: renderToday, foods: renderFoods, trends: renderTrends }[state.tab] || renderToday;
+  view.replaceChildren(fn());
+  const jobs = state.pending;
+  state.pending = [];
+  jobs.forEach((f) => f());
+  window.scrollTo(0, y);
+}
+
+function setTab(t) {
+  state.tab = t;
+  render();
+  window.scrollTo(0, 0);
+}
+
+/* today */
+
+function macroBar(label, have, goal, color) {
+  const pct = goal > 0 ? Math.min(100, Math.round((have / goal) * 100)) : 0;
+  return h('div', { class: 'macro' },
+    h('div', { class: 'mtop' }, h('span', { text: label }), h('b', { text: fmt(have) + 'g' }), goal > 0 ? h('small', { text: '/ ' + fmt(goal) + 'g' }) : null),
+    h('div', { class: 'bar' }, h('i', { style: 'width:' + (goal > 0 ? Math.max(2, pct) : 0) + '%;background:' + color }))
+  );
+}
+
+function renderToday() {
+  const date = state.date;
+  const rows = dayRows(date);
+  const tot = sumOf(rows);
+  const t = state.targets || {};
+  const isToday = date === today();
+  const wrap = h('div', { class: 'fade' });
+  wrap.appendChild(h('div', { class: 'eyebrow', text: 'FOOD' }));
+  wrap.appendChild(h('div', { class: 'headrow' },
+    h('h1', null, isToday ? "Today's " : shortDate(date) + ' ', h('span', { class: 'accent', text: 'fuel' })),
+    h('input', { type: 'date', class: 'datepill', value: date, onchange: (e) => { if (e.target.value) { state.date = e.target.value; render(); } } })
+  ));
+
+  const card = h('div', { class: 'card' });
+  if (t.calories > 0) {
+    const left = t.calories - tot.cal;
+    const pct = Math.min(100, Math.round((tot.cal / t.calories) * 100));
+    card.appendChild(h('div', { class: 'bigcal' },
+      h('b', { class: left < 0 ? 'over' : '', text: fmt(Math.abs(left)) }),
+      h('span', { text: left >= 0 ? 'CALORIES LEFT' : 'CALORIES OVER' }),
+      h('small', { text: fmt(tot.cal) + ' of ' + fmt(t.calories) })
+    ));
+    card.appendChild(h('div', { class: 'bar big' }, h('i', { style: 'width:' + Math.max(2, pct) + '%;background:' + (left < 0 ? '#f87171' : '#39d353') })));
+  } else {
+    card.appendChild(h('div', { class: 'bigcal' }, h('b', { text: fmt(tot.cal) }), h('span', { text: 'CALORIES' }),
+      h('button', { class: 'linkbtn', onclick: openTargets, text: 'set daily targets' })));
+  }
+  card.appendChild(h('div', { class: 'macros' },
+    macroBar('PROTEIN', tot.p, t.protein, '#58d9f5'),
+    macroBar('CARBS', tot.c, t.carbs, '#e6a817'),
+    macroBar('FAT', tot.f, t.fat, '#a78bfa')
+  ));
+  wrap.appendChild(card);
+
+  wrap.appendChild(h('button', { class: 'btn', onclick: () => openAdd('search'), text: '+ ADD FOOD' }));
+  const sub = h('div', { class: 'btnrow' },
+    h('button', { class: 'btn ghost', onclick: () => openServing({ name: '', brand: '', serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, {}), text: 'quick add' }),
+    h('button', { class: 'btn ghost', onclick: () => openAdd('scan'), text: 'scan barcode' })
+  );
+  wrap.appendChild(sub);
+
+  if (!rows.length) {
+    const prev = state.log.map((l) => l.date).filter((d) => d < date).sort().pop();
+    wrap.appendChild(emptyCard('Nothing logged', 'Add a food, scan a barcode, or copy a past day.'));
+    if (prev) wrap.appendChild(h('button', { class: 'btn ghost', onclick: () => copyFromDay(prev, date), text: 'copy everything from ' + shortDate(prev) }));
+  } else {
+    wrap.appendChild(h('h2', null, 'Logged', h('small', { text: rows.length + (rows.length === 1 ? ' ENTRY' : ' ENTRIES') })));
+    const list = h('div', { class: 'card' });
+    rows.forEach((e) => {
+      const sv = Number(e.servings);
+      list.appendChild(h('div', { class: 'frow tap', onclick: () => openEntry(e) },
+        h('div', { class: 'l' }, h('div', { text: e.name }), h('small', { text: (sv === 1 ? '' : r1(sv) + ' × ') + (e.serving_label || '1 serving') })),
+        h('div', { class: 'r' }, fmt(e.calories) + ' cal', h('small', { text: fmt(e.protein) + 'p ' + fmt(e.carbs) + 'c ' + fmt(e.fat) + 'f' }))
+      ));
+    });
+    wrap.appendChild(list);
+  }
+  return wrap;
+}
+
+/* add food sheet */
+
+let addQuery = '';
+
+function openAdd(tab) {
+  state.addTab = tab || 'search';
+  drawAdd();
+}
+
+function drawAdd() {
+  stopScan();
+  const body = h('div');
+  openSheet([
+    sheetHead('Add food, ' + shortDate(state.date)),
+    seg([['search', 'search'], ['scan', 'scan'], ['label', 'label']], state.addTab, (v) => { state.addTab = v; drawAdd(); }),
+    body
+  ]);
+  if (state.addTab === 'scan') drawScan(body);
+  else if (state.addTab === 'label') drawLabel(body);
+  else drawSearch(body);
+}
+
+function foodRow(f, onclick) {
+  return h('div', { class: 'frow tap', onclick },
+    h('div', { class: 'l' }, h('div', { text: f.name }), h('small', { text: [f.brand, f.serving_label].filter(Boolean).join(' · ') })),
+    h('div', { class: 'r' }, fmt(f.calories) + ' cal', h('small', { text: fmt(f.protein) + 'g protein' }))
+  );
+}
+
+function drawSearch(body) {
+  const input = h('input', { class: 'field', placeholder: 'search foods or brands', value: addQuery, autocomplete: 'off', autocapitalize: 'none' });
+  const local = h('div');
+  const remote = h('div');
+  const go = h('button', { class: 'btn ghost', text: 'search the food database' });
+  const drawLocal = () => {
+    const q = key(input.value);
+    let list = state.foods.slice();
+    if (q) list = list.filter((f) => key(f.name + ' ' + (f.brand || '')).includes(q));
+    else list = list.sort((a, b) => String(b.last_used || '').localeCompare(String(a.last_used || ''))).slice(0, 8);
+    fill(local,
+      list.length ? h('h3', { text: q ? 'MY FOODS' : 'RECENT AND SAVED' }) : null,
+      list.map((f) => foodRow(f, () => openServing(f, {})))
+    );
+  };
+  const search = async () => {
+    const q = input.value.trim();
+    addQuery = q;
+    if (q.length < 2) { toast('Type at least 2 letters', 'err'); return; }
+    remote.replaceChildren(h('div', { class: 'muted', style: 'padding:10px 0', text: 'Searching...' }));
+    try {
+      const res = await offSearch(q);
+      fill(remote,
+        h('h3', { text: 'FOOD DATABASE' }),
+        res.length ? res.map((f) => foodRow(f, () => openServing(f, { save: true }))) : h('div', { class: 'muted', text: 'No matches. Try fewer words, or type it in below.' })
+      );
+    } catch (e) {
+      remote.replaceChildren(h('div', { class: 'muted', text: 'Search failed: ' + e.message + '. Check your connection and try again.' }));
+    }
+  };
+  input.addEventListener('input', () => { addQuery = input.value; drawLocal(); });
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') search(); });
+  go.addEventListener('click', search);
+  body.append(h('div', { style: 'margin-top:12px' }, input), go, local, remote,
+    h('button', { class: 'linkbtn', style: 'margin-top:14px', onclick: () => openServing({ name: input.value.trim(), brand: '', serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, {}), text: 'or type it in manually' }));
+  drawLocal();
+}
+
+function drawScan(body) {
+  const status = h('div', { class: 'muted', style: 'margin:8px 0', text: 'Starting the camera...' });
+  const video = h('video', { class: 'scanvid', playsinline: '', autoplay: '' });
+  video.muted = true;
+  const manual = h('input', { class: 'field', placeholder: 'or type the barcode number', inputmode: 'numeric', autocomplete: 'off' });
+  const look = h('button', { class: 'btn ghost', text: 'look up barcode' });
+  look.addEventListener('click', () => { stopScan(); lookupBarcode(manual.value); });
+  manual.addEventListener('keydown', (e) => { if (e.key === 'Enter') { stopScan(); lookupBarcode(manual.value); } });
+  body.append(h('div', { class: 'scanbox', style: 'margin-top:12px' }, video, h('div', { class: 'scanline' })), status, manual, look);
+  startScan(video, status, (code) => { stopScan(); lookupBarcode(code); });
+  status.textContent = 'Point the camera at a barcode.';
+}
+
+function drawLabel(body) {
+  const status = h('div', { class: 'muted', style: 'margin:10px 0', text: 'Take a clear, flat, well lit photo of the Nutrition Facts panel. The numbers are read on your phone, then you confirm them.' });
+  const file = h('input', { type: 'file', accept: 'image/*', capture: 'environment', class: 'hidden' });
+  const pick = h('button', { class: 'btn', text: 'take or choose a photo' });
+  pick.addEventListener('click', () => file.click());
+  file.addEventListener('change', async () => {
+    const f = file.files && file.files[0];
+    if (!f) return;
+    pick.disabled = true;
+    try {
+      const text = await ocrLabel(f, status);
+      const p = parseLabel(text);
+      if (p.calories == null && p.protein == null && p.carbs == null && p.fat == null) {
+        status.textContent = 'Could not read that one. Try a flatter, brighter photo, or type it in.';
+        pick.disabled = false;
+        return;
+      }
+      openServing({
+        name: '', brand: '', serving_label: p.serving_label || '1 serving',
+        calories: p.calories == null ? '' : p.calories, protein: p.protein == null ? '' : p.protein,
+        carbs: p.carbs == null ? '' : p.carbs, fat: p.fat == null ? '' : p.fat, fiber: p.fiber
+      }, { save: true, note: 'Read from the photo. Check every number against the label before saving.' });
+    } catch (e) {
+      status.textContent = 'Label reading failed: ' + e.message;
+      pick.disabled = false;
+    }
+  });
+  body.append(status, pick, file,
+    h('button', { class: 'linkbtn', style: 'margin-top:14px', onclick: () => openServing({ name: '', brand: '', serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, {}), text: 'or type it in manually' }));
+}
+
+/* serving / food form */
+
+function openServing(food, opts) {
+  const edit = !!opts.edit;
+  const nameIn = h('input', { class: 'field', placeholder: 'name', value: food.name || '' });
+  const brandIn = h('input', { class: 'field', placeholder: 'brand (optional)', value: food.brand || '' });
+  const labelIn = h('input', { class: 'field', placeholder: 'serving, e.g. 1 cup (240g)', value: food.serving_label || '1 serving' });
+  const mk = (ph, v) => h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: ph, value: v === '' || v == null ? '' : String(v) });
+  const cal = mk('calories', food.calories);
+  const pro = mk('protein g', food.protein);
+  const car = mk('carbs g', food.carbs);
+  const fat = mk('fat g', food.fat);
+  const sv = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', value: '1' });
+  const total = h('div', { class: 'hint' });
+  const read = () => ({ calories: num(cal.value), protein: num(pro.value) || 0, carbs: num(car.value) || 0, fat: num(fat.value) || 0, fiber: food.fiber == null || food.fiber === '' ? null : Number(food.fiber) });
+  const drawTotal = () => {
+    const v = read();
+    const s = num(sv.value) || 0;
+    fill(total, h('b', { text: fmt((v.calories || 0) * s) + ' cal' }), '  ', fmt(v.protein * s) + 'g protein, ' + fmt(v.carbs * s) + 'g carbs, ' + fmt(v.fat * s) + 'g fat');
+  };
+  [cal, pro, car, fat, sv].forEach((i) => i.addEventListener('input', drawTotal));
+  const quick = h('div', { class: 'chiprow' }, [0.5, 1, 1.5, 2, 3].map((x) => h('button', { class: 'chip', onclick: () => { sv.value = String(x); drawTotal(); }, text: x + '×' })));
+  const saveBox = h('input', { type: 'checkbox', checked: !food.id && !!(opts.save || food.barcode) });
+
+  const log = h('button', { class: 'btn', text: edit ? 'log it today' : 'log it' });
+  log.addEventListener('click', async () => {
+    const v = read();
+    const s = num(sv.value);
+    const name = nameIn.value.trim() || (v.calories != null ? 'Quick add' : '');
+    if (!name || v.calories == null || !s || s <= 0) { toast('Enter calories and servings', 'err'); return; }
+    let f = { id: food.id || null, name, serving_label: labelIn.value.trim() || '1 serving' };
+    if (!food.id && saveBox.checked) {
+      const saved = await saveFood({
+        name, brand: brandIn.value.trim() || null, barcode: food.barcode || null, serving_label: f.serving_label,
+        serving_g: food.serving_g == null ? null : food.serving_g, calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat,
+        fiber: v.fiber, last_used: today()
+      });
+      if (saved) f = { id: saved.id, name, serving_label: f.serving_label };
+    }
+    const row = await addLog(f, s, v, state.date);
+    if (!row) return;
+    closeSheet();
+    state.tab = 'today';
+    render();
+    toast('Logged ' + name);
+  });
+
+  const body = [
+    sheetHead(edit ? 'Edit food' : 'Log food'),
+    opts.note ? h('div', { class: 'hint' }, opts.note) : null,
+    nameIn, brandIn, labelIn,
+    h('h3', { text: 'PER SERVING' }),
+    h('div', { class: 'inrow' }, cal, pro), h('div', { class: 'inrow' }, car, fat),
+    h('h3', { text: 'HOW MANY SERVINGS' }), sv, quick, total
+  ];
+  if (!food.id) body.push(h('label', { class: 'chk' }, saveBox, ' save to my foods for next time'));
+  body.push(log);
+  if (edit && food.id) {
+    const save = h('button', { class: 'btn ghost', style: 'margin-top:8px', text: 'save changes' });
+    save.addEventListener('click', async () => {
+      const v = read();
+      if (!nameIn.value.trim() || v.calories == null) { toast('Enter a name and calories', 'err'); return; }
+      const saved = await saveFood({
+        name: nameIn.value.trim(), brand: brandIn.value.trim() || null, serving_label: labelIn.value.trim() || '1 serving',
+        calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat
+      }, food.id);
+      if (saved) { closeSheet(); render(); toast('Saved'); }
+    });
+    const del = h('button', { class: 'btn ghost danger', style: 'margin-top:8px', text: 'delete food' });
+    let armed = false;
+    del.addEventListener('click', async () => {
+      if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+      if (await deleteFood(food.id)) { closeSheet(); render(); }
+    });
+    body.push(save, del);
+  }
+  openSheet(body);
+  drawTotal();
+}
+
+/* edit a logged entry */
+
+function openEntry(e) {
+  const s0 = Number(e.servings) || 1;
+  const base = { cal: Number(e.calories) / s0, p: Number(e.protein) / s0, c: Number(e.carbs) / s0, f: Number(e.fat) / s0 };
+  const sv = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', value: String(r1(s0)) });
+  const mk = (v) => h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', value: String(r1(v)) });
+  const cal = mk(e.calories);
+  const pro = mk(e.protein);
+  const car = mk(e.carbs);
+  const fat = mk(e.fat);
+  sv.addEventListener('input', () => {
+    const s = num(sv.value);
+    if (!s || s < 0) return;
+    cal.value = String(r1(base.cal * s));
+    pro.value = String(r1(base.p * s));
+    car.value = String(r1(base.c * s));
+    fat.value = String(r1(base.f * s));
+  });
+  const save = h('button', { class: 'btn', text: 'save' });
+  save.addEventListener('click', async () => {
+    const s = num(sv.value);
+    if (!s || s <= 0 || num(cal.value) == null) { toast('Enter servings and calories', 'err'); return; }
+    const ok = await updateLog(e.id, { servings: r1(s), calories: num(cal.value), protein: num(pro.value) || 0, carbs: num(car.value) || 0, fat: num(fat.value) || 0 });
+    if (ok) { closeSheet(); render(); }
+  });
+  const del = h('button', { class: 'btn ghost danger', text: 'delete' });
+  let armed = false;
+  del.addEventListener('click', async () => {
+    if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+    if (await deleteLog(e.id)) { closeSheet(); render(); }
+  });
+  openSheet([
+    sheetHead(e.name),
+    h('div', { class: 'muted', style: 'margin-bottom:8px', text: e.serving_label || '1 serving' }),
+    h('h3', { text: 'SERVINGS' }), sv,
+    h('h3', { text: 'TOTALS (CALORIES, PROTEIN, CARBS, FAT)' }),
+    h('div', { class: 'inrow' }, cal, pro), h('div', { class: 'inrow' }, car, fat),
+    h('div', { class: 'btnrow' }, save, del)
+  ]);
+}
+
+/* my foods */
+
+function renderFoods() {
+  const wrap = h('div', { class: 'fade' });
+  wrap.appendChild(h('div', { class: 'eyebrow', text: 'LIBRARY' }));
+  wrap.appendChild(h('h1', null, 'My ', h('span', { class: 'accent', text: 'foods' })));
+  wrap.appendChild(h('p', { class: 'sub', text: 'Foods you saved. Tap one to edit it or log it.' }));
+  const q = h('input', { class: 'field', placeholder: 'filter', value: state.foodFilter, autocomplete: 'off' });
+  const list = h('div', { class: 'card' });
+  const draw = () => {
+    const f = key(state.foodFilter);
+    const rows = state.foods.filter((x) => !f || key(x.name + ' ' + (x.brand || '')).includes(f)).sort((a, b) => a.name.localeCompare(b.name));
+    fill(list, rows.length ? rows.map((x) => foodRow(x, () => openServing(x, { edit: true }))) : h('div', { class: 'muted', text: state.foods.length ? 'No matches.' : 'Nothing saved yet. Scan or search a food and it lands here.' }));
+  };
+  q.addEventListener('input', () => { state.foodFilter = q.value; draw(); });
+  wrap.appendChild(q);
+  wrap.appendChild(h('div', { class: 'btnrow', style: 'margin-bottom:12px' },
+    h('button', { class: 'btn ghost', onclick: () => openServing({ name: '', brand: '', serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, { save: true }), text: '+ new food' }),
+    h('button', { class: 'btn ghost', onclick: openRecipe, text: '+ recipe' })
+  ));
+  draw();
+  wrap.appendChild(list);
+  return wrap;
+}
+
+function openRecipe() {
+  if (!state.foods.length) { toast('Save some foods first, then build recipes from them', 'err'); return; }
+  const nameIn = h('input', { class: 'field', placeholder: 'recipe name', autocomplete: 'off' });
+  const portions = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '1', value: '1' });
+  const ing = [];
+  const box = h('div');
+  const preview = h('div', { class: 'hint' });
+  const sorted = state.foods.slice().sort((a, b) => a.name.localeCompare(b.name));
+  const calc = () => {
+    let cal = 0; let p = 0; let c = 0; let f = 0;
+    ing.forEach((x) => {
+      const fd = state.foods.find((z) => z.id === x.sel.value);
+      const s = num(x.sv.value) || 0;
+      if (fd) { cal += fd.calories * s; p += fd.protein * s; c += fd.carbs * s; f += fd.fat * s; }
+    });
+    const n = Math.max(1, num(portions.value) || 1);
+    return { calories: r1(cal / n), protein: r1(p / n), carbs: r1(c / n), fat: r1(f / n) };
+  };
+  const drawPrev = () => { const v = calc(); preview.textContent = 'Per portion: ' + fmt(v.calories) + ' cal, ' + fmt(v.protein) + 'g protein, ' + fmt(v.carbs) + 'g carbs, ' + fmt(v.fat) + 'g fat'; };
+  const addRow = () => {
+    const sel = h('select', { class: 'pick' }, sorted.map((f) => h('option', { value: f.id, text: f.name + ' (' + f.serving_label + ')' })));
+    const sv = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', value: '1', style: 'max-width:80px' });
+    sel.addEventListener('change', drawPrev);
+    sv.addEventListener('input', drawPrev);
+    ing.push({ sel, sv });
+    box.appendChild(h('div', { class: 'ingrow' }, sel, sv));
+    drawPrev();
+  };
+  portions.addEventListener('input', drawPrev);
+  addRow();
+  const save = h('button', { class: 'btn', text: 'save recipe' });
+  save.addEventListener('click', async () => {
+    if (!nameIn.value.trim()) { toast('Name the recipe', 'err'); return; }
+    const v = calc();
+    const saved = await saveFood({ name: nameIn.value.trim(), brand: null, barcode: null, serving_label: '1 portion', calories: v.calories, protein: v.protein, carbs: v.carbs, fat: v.fat });
+    if (saved) { closeSheet(); render(); toast('Recipe saved to your foods'); }
+  });
+  openSheet([
+    sheetHead('New recipe'), nameIn,
+    h('h3', { text: 'INGREDIENTS (FROM YOUR FOODS, SERVINGS)' }), box,
+    h('button', { class: 'linkbtn', onclick: addRow, text: '+ add ingredient' }),
+    h('h3', { text: 'PORTIONS THE RECIPE MAKES' }), portions, preview, save
+  ]);
+}
+
+/* trends */
+
+function renderTrends() {
+  const wrap = h('div', { class: 'fade' });
+  wrap.appendChild(h('div', { class: 'eyebrow', text: 'TRENDS' }));
+  wrap.appendChild(h('h1', null, 'How it is ', h('span', { class: 'accent', text: 'going' })));
+  wrap.appendChild(seg([[7, '7 days'], [30, '30 days'], [90, '90 days']], state.trendDays, (v) => { state.trendDays = v; render(); }));
+  const N = state.trendDays;
+  const dates = [];
+  for (let i = N - 1; i >= 0; i -= 1) dates.push(addDays(today(), -i));
+  const tots = dates.map((d) => dayTotals(d));
+  const logged = tots.filter((t) => t.n > 0);
+  const avg = (f) => (logged.length ? logged.reduce((s, t) => s + f(t), 0) / logged.length : 0);
+  const tg = state.targets || {};
+  const hit = tg.protein > 0 ? logged.filter((t) => t.p >= tg.protein).length : null;
+  wrap.appendChild(h('div', { class: 'tiles four', style: 'margin-top:12px' },
+    h('div', { class: 'tile' }, h('b', { text: logged.length ? fmt(avg((t) => t.cal)) : '-' }), h('span', { text: 'AVG CALORIES' })),
+    h('div', { class: 'tile' }, h('b', { text: logged.length ? fmt(avg((t) => t.p)) + 'g' : '-' }), h('span', { text: 'AVG PROTEIN' })),
+    h('div', { class: 'tile' }, h('b', { text: String(logged.length) }), h('span', { text: 'DAYS LOGGED' })),
+    h('div', { class: 'tile' }, h('b', { text: hit === null ? '-' : String(hit) }), h('span', { text: 'PROTEIN GOAL HIT' }))
+  ));
+  if (!logged.length) { wrap.appendChild(emptyCard('No data yet', 'Log a few days and the charts show up here.')); return wrap; }
+
+  const labels = dates.map(shortDate);
+  const calData = tots.map((t) => (t.n ? Math.round(t.cal) : null));
+  const proData = tots.map((t) => (t.n ? Math.round(t.p) : null));
+  const line = (label, data, color, extra) => Object.assign({ type: 'line', label, data, borderColor: color, backgroundColor: 'transparent', borderWidth: 2, pointRadius: 0, tension: 0 }, extra || {});
+  const calSets = [{ type: 'bar', label: 'Calories', data: calData, backgroundColor: '#196127', borderRadius: 3, maxBarThickness: 18 }];
+  if (tg.calories > 0) calSets.push(line('Target', dates.map(() => tg.calories), '#e6a817', { borderDash: [5, 4] }));
+  wrap.appendChild(h('h2', null, 'Calories', h('small', { text: 'PER DAY' })));
+  wrap.appendChild(h('div', { class: 'card' }, chartBox({
+    type: 'bar',
+    data: { labels, datasets: calSets },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: TIP }, scales: axes({ beginAtZero: true }) }
+  }, 190)));
+
+  const proSets = [line('Protein', proData, '#58d9f5', { pointRadius: N <= 30 ? 3 : 0, spanGaps: true })];
+  if (tg.protein > 0) proSets.push(line('Target', dates.map(() => tg.protein), '#e6a817', { borderDash: [5, 4] }));
+  wrap.appendChild(h('h2', null, 'Protein', h('small', { text: 'GRAMS PER DAY' })));
+  wrap.appendChild(h('div', { class: 'card' }, chartBox({
+    type: 'line',
+    data: { labels, datasets: proSets },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: TIP }, scales: axes({ beginAtZero: true }) }
+  }, 190)));
+
+  const since = dates[0];
+  const bw = state.bodyweights.filter((b) => b.date >= since);
+  wrap.appendChild(h('h2', null, 'Body weight', h('small', { text: state.unit.toUpperCase() })));
+  if (bw.length >= 2) {
+    wrap.appendChild(h('div', { class: 'card' }, chartBox({
+      type: 'line',
+      data: { labels: bw.map((b) => shortDate(b.date)), datasets: [line('Weight', bw.map((b) => r1(toDisp(b.weight))), '#39d353', { pointRadius: 3, tension: 0.3 })] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: TIP }, scales: axes({}) }
+    }, 170)));
+  } else {
+    wrap.appendChild(h('div', { class: 'card muted', text: 'Log weigh-ins in the gym app (BODY tab) and your weight shows here next to what you eat.' }));
+  }
+  return wrap;
+}
+
+/* targets, account */
+
+function openTargets() {
+  const t = state.targets || {};
+  const mk = (ph, v) => h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: ph, value: v ? String(Math.round(v)) : '' });
+  const cal = mk('calories per day', t.calories);
+  const pro = mk('protein g', t.protein);
+  const car = mk('carbs g (optional)', t.carbs);
+  const fat = mk('fat g (optional)', t.fat);
+  const last = state.bodyweights.length ? state.bodyweights[state.bodyweights.length - 1] : null;
+  const lbs = last ? Number(last.weight) : null;
+  const save = h('button', { class: 'btn', text: 'save targets' });
+  save.addEventListener('click', async () => {
+    if (await saveTargets({ calories: num(cal.value), protein: num(pro.value), carbs: num(car.value), fat: num(fat.value) })) { closeSheet(); render(); toast('Targets saved'); }
+  });
+  openSheet([
+    sheetHead('Daily targets'),
+    h('div', { class: 'muted', style: 'margin-bottom:10px', text: 'Leave carbs and fat empty if you only track calories and protein.' }),
+    last ? h('div', { class: 'hint' }, 'A common rule of thumb for lifters is 0.7 to 1 g of protein per lb of body weight. At ' + fmt(toDisp(lbs)) + ' ' + state.unit + ' that is about ' + fmt(lbs * 0.7) + ' to ' + fmt(lbs) + ' g.') : null,
+    cal, pro, car, fat, save
+  ]);
+}
+
+function exportLog() {
+  const lines = ['date,name,servings,serving,calories,protein,carbs,fat'];
+  state.log.slice().sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.created_at < b.created_at ? -1 : 1)).forEach((l) => {
+    lines.push([l.date, l.name, l.servings, l.serving_label, l.calories, l.protein, l.carbs, l.fat].map(csvCell).join(','));
+  });
+  downloadText('food_' + state.me.username + '.csv', lines.join('\n') + '\n');
+}
+
+function openAccount() {
+  const clear = h('button', { class: 'btn ghost danger', text: 'delete all my food data' });
+  let armed = false;
+  clear.addEventListener('click', async () => {
+    if (!armed) { armed = true; clear.textContent = 'tap again, this cannot be undone'; return; }
+    if (await clearFoodData()) { closeSheet(); render(); toast('Food data deleted'); }
+  });
+  openSheet([
+    sheetHead(state.me.username),
+    h('button', { class: 'btn ghost', onclick: () => { closeSheet(); openTargets(); }, text: 'daily targets' }),
+    h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: exportLog, text: 'export food log (CSV)' }),
+    h('a', { class: 'btn ghost linkrow', href: '/gym/', text: 'open the gym app' }),
+    h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => { closeSheet(); logout(); }, text: 'switch user' }),
+    h('div', { class: 'muted', style: 'margin:12px 0 6px;font-size:11px', text: 'You are logged in to the gym app and this one with the same account. Switching user here switches it there too.' }),
+    clear
+  ]);
+}
+/* auth */
+
+async function sha(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+
+function showLogin() {
+  $('app').classList.add('hidden');
+  $('login').classList.remove('hidden');
+}
+
+async function auth() {
+  $('loginErr').textContent = '';
+  const username = $('user').value.trim().toLowerCase();
+  const pin = $('pin').value.trim();
+  if (!username || !/^\d{4}$/.test(pin)) { $('loginErr').textContent = 'Enter a username and a 4-digit PIN.'; return; }
+  const hash = await sha(username + ':' + pin);
+  const found = await db.from('profiles').select('id, username, pin_hash').eq('username', username).maybeSingle();
+  if (found.error) { $('loginErr').textContent = found.error.message; return; }
+  if (!found.data || found.data.pin_hash !== hash) { $('loginErr').textContent = 'Wrong username or PIN.'; return; }
+  enter({ id: found.data.id, username: found.data.username });
+}
+
+async function enter(profile) {
+  state.me = { id: profile.id, username: profile.username };
+  lsSet('gym_me', JSON.stringify(state.me));
+  state.date = today();
+  state.tab = 'today';
+  state.loaded = false;
+  state.error = '';
+  $('login').classList.add('hidden');
+  $('app').classList.remove('hidden');
+  $('who').replaceChildren(h('span', { text: profile.username }));
+  render();
+  await refreshData(true);
+}
+
+function logout() {
+  lsDel('gym_me');
+  state.me = null;
+  state.log = [];
+  state.foods = [];
+  state.targets = null;
+  state.bodyweights = [];
+  destroyCharts();
+  closeSheet();
+  $('pin').value = '';
+  showLogin();
+}
+
+/* boot */
+
+$('loginBtn').addEventListener('click', auth);
+$('pin').addEventListener('keydown', (e) => { if (e.key === 'Enter') auth(); });
+$('who').addEventListener('click', openAccount);
+document.querySelectorAll('#tabs button').forEach((b) => b.addEventListener('click', () => setTab(b.dataset.tab)));
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('sheet').classList.contains('hidden')) closeSheet(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && state.me && $('sheet').classList.contains('hidden')) refreshData(false); });
+
+(function boot() {
+  let saved = null;
+  try { saved = JSON.parse(lsGet('gym_me')); } catch (e) { saved = null; }
+  if (saved && saved.id) enter(saved);
+  else showLogin();
+})();
+</script>
+</body>
+</html>
