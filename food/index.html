@@ -212,6 +212,13 @@
   .feed .t { margin-left: auto; font-size: 10px; color: #484f58; flex-shrink: 0; }
   .kudos { font-size: 11px; border: 1px solid #30363d; border-radius: 99px; padding: 0 10px; color: #8b949e; flex-shrink: 0; }
   .kudos.on { border-color: #e6a817; color: #e6a817; }
+  .mealblock { margin-top: 14px; }
+  .mealhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+  .mealhead .l b { font-size: 13px; letter-spacing: 0.04em; }
+  .mealhead .l small { display: block; font-size: 10px; color: #6e7681; }
+  .mealact { display: flex; align-items: center; gap: 10px; }
+  .plusbtn { width: 28px; height: 28px; border-radius: 99px; border: 1px solid #196127; background: rgba(57,211,83,0.08); color: #39d353; font-size: 18px; line-height: 1; padding: 0; cursor: pointer; font-family: inherit; }
+  .linkmini { background: none; border: none; color: #58d9f5; font-size: 11px; cursor: pointer; font-family: inherit; padding: 4px 0; }
   .pill { font-size: 9px; letter-spacing: 0.06em; border-radius: 99px; padding: 0 8px; border: 1px solid; white-space: nowrap; }
   .pill.gym { color: #39d353; border-color: #196127; background: rgba(57,211,83,0.08); }
   .pill.slack { color: #f87171; border-color: rgba(248,113,113,0.4); background: rgba(248,113,113,0.08); }
@@ -396,7 +403,7 @@ const $ = (id) => document.getElementById(id);
 
 const state = {
   me: null, unit: 'lb', tab: 'today', date: '', foods: [], log: [], targets: null, bodyweights: [],
-  addTab: 'search', trendDays: 30, foodFilter: '', pending: [], loaded: false, error: ''
+  addTab: 'search', meal: 'breakfast', meals: [], share: { share: false }, lastShareSig: '', trendDays: 30, foodFilter: '', pending: [], loaded: false, error: ''
 };
 
 /* tiny helpers */
@@ -447,6 +454,7 @@ function parseD(s) { const p = s.split('-').map(Number); return new Date(p[0], p
 function fmtD(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
 function addDays(s, n) { const d = parseD(s); d.setDate(d.getDate() + n); return fmtD(d); }
 function daysBetween(a, b) { return Math.round((parseD(b) - parseD(a)) / 86400000); }
+function weekStart(s) { const d = parseD(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return fmtD(d); }
 function shortDate(s) { return parseD(s).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
 
 /* toast, sheet, segmented control */
@@ -514,6 +522,18 @@ function chartBox(config, height) {
     liveCharts.push(new Chart(canvas, config));
   });
   return box;
+}
+
+/* meals */
+
+const MEALS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snack', 'Snacks']];
+function mealByTime() {
+  const hr = new Date().getHours();
+  return hr < 11 ? 'breakfast' : hr < 16 ? 'lunch' : hr < 21 ? 'dinner' : 'snack';
+}
+function errToast(err) {
+  const m = (err && err.message) || 'Something went wrong';
+  toast(m + (/meal|saved_meals|food_share|schema cache/i.test(m) ? ' (run setup12.sql?)' : ''), 'err');
 }
 
 /* macro math */
@@ -640,7 +660,9 @@ async function loadAll() {
     fetchAll('foods', '*', (q) => q.eq('profile_id', me).order('created_at').order('id')),
     fetchAll('food_log', '*', (q) => q.eq('profile_id', me).gte('date', since).order('date').order('created_at')),
     db.from('food_targets').select('*').eq('profile_id', me).maybeSingle(),
-    fetchAll('bodyweights', 'id, profile_id, date, weight', (q) => q.eq('profile_id', me).order('date').order('id'))
+    fetchAll('bodyweights', 'id, profile_id, date, weight', (q) => q.eq('profile_id', me).order('date').order('id')),
+    fetchAll('saved_meals', '*', (q) => q.eq('profile_id', me).order('created_at').order('id')).catch(() => []),
+    db.from('food_share').select('*').eq('profile_id', me).maybeSingle()
   ]);
   if (r[0].error) throw r[0].error;
   if (!r[0].data) { const e = new Error('Account not found'); e.gone = true; throw e; }
@@ -650,6 +672,8 @@ async function loadAll() {
   state.log = r[2];
   state.targets = r[3].data;
   state.bodyweights = r[4];
+  state.meals = r[5];
+  state.share = r[6] && !r[6].error && r[6].data ? r[6].data : { share: false };
 }
 
 async function refreshData(showLoading) {
@@ -667,15 +691,15 @@ async function refreshData(showLoading) {
 
 /* actions */
 
-async function addLog(food, servings, vals, date) {
+async function addLog(food, servings, vals, date, meal) {
   const row = {
     profile_id: state.me.id, date: date || state.date, name: food.name, servings: r1(servings) || 1,
     serving_label: food.serving_label || null,
     calories: r1(vals.calories * servings), protein: r1(vals.protein * servings), carbs: r1(vals.carbs * servings), fat: r1(vals.fat * servings),
-    fiber: vals.fiber == null ? null : r1(vals.fiber * servings), food_id: food.id || null
+    fiber: vals.fiber == null ? null : r1(vals.fiber * servings), food_id: food.id || null, meal: meal || state.meal || null
   };
   const res = await db.from('food_log').insert(row).select().single();
-  if (res.error) { toast(res.error.message, 'err'); return null; }
+  if (res.error) { errToast(res.error); return null; }
   state.log.push(res.data);
   if (food.id) touchFood(food.id);
   return res.data;
@@ -735,10 +759,10 @@ async function copyFromDay(src, dst) {
   if (!rows.length) return;
   const body = rows.map((l) => ({
     profile_id: state.me.id, date: dst, name: l.name, servings: l.servings, serving_label: l.serving_label,
-    calories: l.calories, protein: l.protein, carbs: l.carbs, fat: l.fat, fiber: l.fiber, food_id: l.food_id
+    calories: l.calories, protein: l.protein, carbs: l.carbs, fat: l.fat, fiber: l.fiber, food_id: l.food_id, meal: l.meal || null
   }));
   const res = await db.from('food_log').insert(body).select();
-  if (res.error) { toast(res.error.message, 'err'); return; }
+  if (res.error) { errToast(res.error); return; }
   state.log = state.log.concat(res.data);
   toast('Copied ' + rows.length + ' entries from ' + shortDate(src));
   render();
@@ -755,6 +779,56 @@ async function clearFoodData() {
   state.foods = [];
   state.targets = null;
   return true;
+}
+
+async function saveMeal(name, items) {
+  const res = await db.from('saved_meals').insert({ profile_id: state.me.id, name, items }).select().single();
+  if (res.error) { errToast(res.error); return null; }
+  state.meals.push(res.data);
+  return res.data;
+}
+
+async function deleteMeal(id) {
+  const res = await db.from('saved_meals').delete().eq('id', id).eq('profile_id', state.me.id);
+  if (res.error) { errToast(res.error); return false; }
+  state.meals = state.meals.filter((m) => m.id !== id);
+  return true;
+}
+
+async function logMeal(m, factor, meal) {
+  const items = Array.isArray(m.items) ? m.items : [];
+  if (!items.length) return false;
+  const body = items.map((i) => ({
+    profile_id: state.me.id, date: state.date, name: i.name, servings: r1((Number(i.servings) || 1) * factor), serving_label: i.serving_label || null,
+    calories: r1(i.calories * factor), protein: r1(i.protein * factor), carbs: r1(i.carbs * factor), fat: r1(i.fat * factor),
+    fiber: i.fiber == null ? null : r1(i.fiber * factor), food_id: i.food_id || null, meal
+  }));
+  const res = await db.from('food_log').insert(body).select();
+  if (res.error) { errToast(res.error); return false; }
+  state.log = state.log.concat(res.data);
+  return true;
+}
+
+/* the gym app can show a "protein hit" pill, only if the person turns it on. It stores a yes or no, nothing else. */
+async function pushShare(on) {
+  const t = state.targets || {};
+  const hit = !!(t.protein > 0 && dayTotals(today()).p >= t.protein);
+  const row = { profile_id: state.me.id, share: on, protein_date: today(), protein_hit: on ? hit : false, updated_at: new Date().toISOString() };
+  const res = await db.from('food_share').upsert(row, { onConflict: 'profile_id' });
+  if (res.error) { errToast(res.error); return false; }
+  state.share = row;
+  state.lastShareSig = [on, today(), row.protein_hit].join('|');
+  return true;
+}
+
+function syncShare() {
+  if (!state.me || !state.loaded || state.error || !state.share.share) return;
+  const t = state.targets || {};
+  const hit = !!(t.protein > 0 && dayTotals(today()).p >= t.protein);
+  const sig = [true, today(), hit].join('|');
+  if (sig === state.lastShareSig) return;
+  state.lastShareSig = sig;
+  pushShare(true);
 }
 /* goal weight, calorie plan, check-ins */
 
@@ -1131,6 +1205,7 @@ function render() {
   state.pending = [];
   jobs.forEach((f) => f());
   window.scrollTo(0, y);
+  syncShare();
 }
 
 function setTab(t) {
@@ -1187,30 +1262,116 @@ function renderToday() {
     wrap.appendChild(h('div', { class: 'hint warn tap', onclick: () => setTab('trends'), text: ci.msg }));
   }
 
-  wrap.appendChild(h('button', { class: 'btn', onclick: () => openAdd('search'), text: '+ ADD FOOD' }));
+  wrap.appendChild(h('button', { class: 'btn', onclick: () => { state.meal = mealByTime(); openAdd('search'); }, text: '+ ADD FOOD' }));
   const sub = h('div', { class: 'btnrow' },
-    h('button', { class: 'btn ghost', onclick: () => openServing({ name: '', brand: '', serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, {}), text: 'quick add' }),
-    h('button', { class: 'btn ghost', onclick: () => openAdd('scan'), text: 'scan barcode' })
+    h('button', { class: 'btn ghost', onclick: () => { state.meal = mealByTime(); openServing({ name: '', brand: '', serving_label: '1 serving', calories: '', protein: '', carbs: '', fat: '' }, {}); }, text: 'quick add' }),
+    h('button', { class: 'btn ghost', onclick: () => { state.meal = mealByTime(); openAdd('scan'); }, text: 'scan barcode' })
   );
   wrap.appendChild(sub);
 
   if (!rows.length) {
     const prev = state.log.map((l) => l.date).filter((d) => d < date).sort().pop();
-    wrap.appendChild(emptyCard('Nothing logged', 'Add a food, scan a barcode, or copy a past day.'));
-    if (prev) wrap.appendChild(h('button', { class: 'btn ghost', onclick: () => copyFromDay(prev, date), text: 'copy everything from ' + shortDate(prev) }));
-  } else {
-    wrap.appendChild(h('h2', null, 'Logged', h('small', { text: rows.length + (rows.length === 1 ? ' ENTRY' : ' ENTRIES') })));
+    if (prev) wrap.appendChild(h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => copyFromDay(prev, date), text: 'copy everything from ' + shortDate(prev) }));
+  }
+  const groups = MEALS.map((m) => ({ k: m[0], label: m[1], rows: rows.filter((e) => e.meal === m[0]) }));
+  const other = rows.filter((e) => !MEALS.some((m) => m[0] === e.meal));
+  if (other.length) groups.push({ k: 'other', label: 'Unsorted', rows: other });
+  groups.forEach((g) => wrap.appendChild(mealSection(g)));
+  return wrap;
+}
+
+function mealSection(g) {
+  const sum = sumOf(g.rows);
+  const block = h('div', { class: 'mealblock' },
+    h('div', { class: 'mealhead' },
+      h('div', { class: 'l' }, h('b', { text: g.label }), g.rows.length ? h('small', { text: fmt(sum.cal) + ' cal, ' + fmt(sum.p) + 'g protein' }) : null),
+      h('div', { class: 'mealact' },
+        g.rows.length && g.k !== 'other' ? h('button', { class: 'linkmini', onclick: () => openSaveMeal(g), text: 'save meal' }) : null,
+        g.k !== 'other' ? h('button', { class: 'plusbtn', title: 'Add to ' + g.label, onclick: () => { state.meal = g.k; openAdd('search'); }, text: '+' }) : null
+      )
+    )
+  );
+  if (g.rows.length) {
     const list = h('div', { class: 'card' });
-    rows.forEach((e) => {
+    g.rows.forEach((e) => {
       const sv = Number(e.servings);
       list.appendChild(h('div', { class: 'frow tap', onclick: () => openEntry(e) },
         h('div', { class: 'l' }, h('div', { text: e.name }), h('small', { text: (sv === 1 ? '' : r1(sv) + ' × ') + (e.serving_label || '1 serving') })),
         h('div', { class: 'r' }, fmt(e.calories) + ' cal', h('small', { text: fmt(e.protein) + 'p ' + fmt(e.carbs) + 'c ' + fmt(e.fat) + 'f' }))
       ));
     });
-    wrap.appendChild(list);
+    block.appendChild(list);
   }
-  return wrap;
+  return block;
+}
+
+function mealChips(get, set) {
+  const row = h('div', { class: 'chiprow' });
+  const draw = () => fill(row, MEALS.map((m) => h('button', { class: 'chip' + (m[0] === get() ? ' on' : ''), onclick: () => { set(m[0]); draw(); }, text: m[1] })));
+  draw();
+  return row;
+}
+
+/* saved meals */
+
+function openSaveMeal(g) {
+  const name = h('input', { class: 'field', placeholder: 'meal name', value: 'My ' + g.label.toLowerCase().replace(/s$/, ''), autocomplete: 'off' });
+  const sum = sumOf(g.rows);
+  const save = h('button', { class: 'btn', text: 'save meal' });
+  save.addEventListener('click', async () => {
+    if (!name.value.trim()) { toast('Name the meal', 'err'); return; }
+    const items = g.rows.map((e) => ({ name: e.name, serving_label: e.serving_label, servings: Number(e.servings), calories: Number(e.calories), protein: Number(e.protein), carbs: Number(e.carbs), fat: Number(e.fat), fiber: e.fiber == null ? null : Number(e.fiber), food_id: e.food_id || null }));
+    if (await saveMeal(name.value.trim(), items)) { closeSheet(); render(); toast('Meal saved. Find it under the meals tab when adding food.'); }
+  });
+  openSheet([
+    sheetHead('Save as a meal'),
+    h('div', { class: 'hint' }, g.rows.length + (g.rows.length === 1 ? ' item, ' : ' items, ') + fmt(sum.cal) + ' cal, ' + fmt(sum.p) + 'g protein'),
+    g.rows.map((e) => h('div', { class: 'muted', style: 'font-size:11px', text: e.name })),
+    h('div', { style: 'height:10px' }), name, save
+  ]);
+}
+
+function openMealLog(m) {
+  const items = Array.isArray(m.items) ? m.items : [];
+  let meal = state.meal;
+  const f = h('input', { class: 'field', type: 'number', inputmode: 'decimal', step: 'any', min: '0', value: '1' });
+  const total = h('div', { class: 'hint' });
+  const drawTotal = () => {
+    const x = num(f.value) || 0;
+    const s = items.reduce((a, i) => ({ c: a.c + i.calories, p: a.p + i.protein }), { c: 0, p: 0 });
+    total.textContent = fmt(s.c * x) + ' cal, ' + fmt(s.p * x) + 'g protein';
+  };
+  f.addEventListener('input', drawTotal);
+  const go = h('button', { class: 'btn', text: 'log meal' });
+  go.addEventListener('click', async () => {
+    const x = num(f.value);
+    if (!x || x <= 0) { toast('Enter how many', 'err'); return; }
+    if (await logMeal(m, x, meal)) { closeSheet(); state.tab = 'today'; render(); toast('Logged ' + m.name); }
+  });
+  const del = h('button', { class: 'btn ghost danger', style: 'margin-top:8px', text: 'delete saved meal' });
+  let armed = false;
+  del.addEventListener('click', async () => {
+    if (!armed) { armed = true; del.textContent = 'tap again to delete'; return; }
+    if (await deleteMeal(m.id)) { closeSheet(); render(); }
+  });
+  openSheet([
+    sheetHead(m.name),
+    items.map((i) => h('div', { class: 'frow' }, h('div', { class: 'l' }, h('div', { text: i.name }), h('small', { text: (Number(i.servings) === 1 ? '' : r1(i.servings) + ' × ') + (i.serving_label || '1 serving') })), h('div', { class: 'r', text: fmt(i.calories) + ' cal' }))),
+    h('h3', { text: 'HOW MANY OF THIS MEAL' }), f, total,
+    h('h3', { text: 'ADD TO' }), mealChips(() => meal, (v) => { meal = v; state.meal = v; }),
+    go, del
+  ]);
+  drawTotal();
+}
+
+function drawMeals(body) {
+  const list = state.meals.slice().sort((a, b) => a.name.localeCompare(b.name));
+  fill(body, h('div', { style: 'margin-top:12px' }), list.length ? list.map((m) => {
+    const s = (m.items || []).reduce((a, i) => ({ c: a.c + Number(i.calories), p: a.p + Number(i.protein) }), { c: 0, p: 0 });
+    return h('div', { class: 'frow tap', onclick: () => openMealLog(m) },
+      h('div', { class: 'l' }, h('div', { text: m.name }), h('small', { text: (m.items || []).length + ' items' })),
+      h('div', { class: 'r' }, fmt(s.c) + ' cal', h('small', { text: fmt(s.p) + 'g protein' })));
+  }) : h('div', { class: 'muted', text: 'No saved meals yet. On the Today tab, tap "save meal" on any meal that has food in it.' }));
 }
 
 /* add food sheet */
@@ -1227,10 +1388,12 @@ function drawAdd() {
   const body = h('div');
   openSheet([
     sheetHead('Add food, ' + shortDate(state.date)),
-    seg([['search', 'search'], ['scan', 'scan'], ['label', 'label']], state.addTab, (v) => { state.addTab = v; drawAdd(); }),
+    mealChips(() => state.meal, (v) => { state.meal = v; }),
+    seg([['search', 'search'], ['scan', 'scan'], ['label', 'label'], ['meals', 'meals']], state.addTab, (v) => { state.addTab = v; drawAdd(); }),
     body
   ]);
-  if (state.addTab === 'scan') drawScan(body);
+  if (state.addTab === 'meals') drawMeals(body);
+  else if (state.addTab === 'scan') drawScan(body);
   else if (state.addTab === 'label') drawLabel(body);
   else drawSearch(body);
 }
@@ -1347,6 +1510,7 @@ function openServing(food, opts) {
   [cal, pro, car, fat, sv].forEach((i) => i.addEventListener('input', drawTotal));
   const quick = h('div', { class: 'chiprow' }, [0.5, 1, 1.5, 2, 3].map((x) => h('button', { class: 'chip', onclick: () => { sv.value = String(x); drawTotal(); }, text: x + '×' })));
   const saveBox = h('input', { type: 'checkbox', checked: !food.id && !!(opts.save || food.barcode) });
+  let meal = state.meal;
 
   const log = h('button', { class: 'btn', text: edit ? 'log it today' : 'log it' });
   log.addEventListener('click', async () => {
@@ -1363,7 +1527,7 @@ function openServing(food, opts) {
       });
       if (saved) f = { id: saved.id, name, serving_label: f.serving_label };
     }
-    const row = await addLog(f, s, v, state.date);
+    const row = await addLog(f, s, v, state.date, meal);
     if (!row) return;
     closeSheet();
     state.tab = 'today';
@@ -1377,7 +1541,8 @@ function openServing(food, opts) {
     nameIn, brandIn, labelIn,
     h('h3', { text: 'PER SERVING' }),
     h('div', { class: 'inrow' }, cal, pro), h('div', { class: 'inrow' }, car, fat),
-    h('h3', { text: 'HOW MANY SERVINGS' }), sv, quick, total
+    h('h3', { text: 'HOW MANY SERVINGS' }), sv, quick, total,
+    h('h3', { text: 'ADD TO' }), mealChips(() => meal, (v) => { meal = v; state.meal = v; })
   ];
   if (!food.id) body.push(h('label', { class: 'chk' }, saveBox, ' save to my foods for next time'));
   body.push(log);
@@ -1423,11 +1588,12 @@ function openEntry(e) {
     car.value = String(r1(base.c * s));
     fat.value = String(r1(base.f * s));
   });
+  let meal = e.meal || state.meal;
   const save = h('button', { class: 'btn', text: 'save' });
   save.addEventListener('click', async () => {
     const s = num(sv.value);
     if (!s || s <= 0 || num(cal.value) == null) { toast('Enter servings and calories', 'err'); return; }
-    const ok = await updateLog(e.id, { servings: r1(s), calories: num(cal.value), protein: num(pro.value) || 0, carbs: num(car.value) || 0, fat: num(fat.value) || 0 });
+    const ok = await updateLog(e.id, { servings: r1(s), calories: num(cal.value), protein: num(pro.value) || 0, carbs: num(car.value) || 0, fat: num(fat.value) || 0, meal });
     if (ok) { closeSheet(); render(); }
   });
   const del = h('button', { class: 'btn ghost danger', text: 'delete' });
@@ -1442,6 +1608,7 @@ function openEntry(e) {
     h('h3', { text: 'SERVINGS' }), sv,
     h('h3', { text: 'TOTALS (CALORIES, PROTEIN, CARBS, FAT)' }),
     h('div', { class: 'inrow' }, cal, pro), h('div', { class: 'inrow' }, car, fat),
+    h('h3', { text: 'MEAL' }), mealChips(() => meal, (v) => { meal = v; }),
     h('div', { class: 'btnrow' }, save, del)
   ]);
 }
@@ -1468,6 +1635,10 @@ function renderFoods() {
   ));
   draw();
   wrap.appendChild(list);
+  wrap.appendChild(h('h2', null, 'Saved meals', h('small', { text: String(state.meals.length) })));
+  const ml = h('div', { class: 'card' });
+  drawMeals(ml);
+  wrap.appendChild(ml);
   return wrap;
 }
 
@@ -1540,6 +1711,8 @@ function renderTrends() {
   ));
   if (!logged.length) { wrap.appendChild(emptyCard('No data yet', 'Log a few days and the charts show up here.')); return wrap; }
 
+  wrap.appendChild(weekCard());
+
   const labels = dates.map(shortDate);
   const calData = tots.map((t) => (t.n ? Math.round(t.cal) : null));
   const proData = tots.map((t) => (t.n ? Math.round(t.p) : null));
@@ -1552,6 +1725,23 @@ function renderTrends() {
     data: { labels, datasets: calSets },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: TIP }, scales: axes({ beginAtZero: true }) }
   }, 190)));
+
+  const wkStarts = [];
+  for (let i = 7; i >= 0; i -= 1) wkStarts.push(addDays(weekStart(today()), -7 * i));
+  const wkAvg = wkStarts.map((w) => {
+    const days = [0, 1, 2, 3, 4, 5, 6].map((k) => dayTotals(addDays(w, k))).filter((t) => t.n > 0);
+    return days.length ? Math.round(days.reduce((a, t) => a + t.cal, 0) / days.length) : null;
+  });
+  if (wkAvg.some((v) => v !== null)) {
+    const wkSets = [{ type: 'bar', label: 'Avg calories', data: wkAvg, backgroundColor: '#196127', borderRadius: 3, maxBarThickness: 28 }];
+    if (tg.calories > 0) wkSets.push(line('Target', wkStarts.map(() => tg.calories), '#e6a817', { borderDash: [5, 4] }));
+    wrap.appendChild(h('h2', null, 'Weekly average', h('small', { text: 'CAL PER LOGGED DAY, 8 WEEKS' })));
+    wrap.appendChild(h('div', { class: 'card' }, chartBox({
+      type: 'bar',
+      data: { labels: wkStarts.map(shortDate), datasets: wkSets },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: TIP }, scales: axes({ beginAtZero: true }) }
+    }, 170)));
+  }
 
   const proSets = [line('Protein', proData, '#58d9f5', { pointRadius: N <= 30 ? 3 : 0, spanGaps: true })];
   if (tg.protein > 0) proSets.push(line('Target', dates.map(() => tg.protein), '#e6a817', { borderDash: [5, 4] }));
@@ -1575,6 +1765,40 @@ function renderTrends() {
     wrap.appendChild(h('div', { class: 'card muted', text: 'Log weigh-ins in the gym app (BODY tab) and your weight shows here next to what you eat.' }));
   }
   return wrap;
+}
+
+function weekCard() {
+  const tg = state.targets || {};
+  const ws = weekStart(today());
+  let eaten = 0;
+  let logDays = 0;
+  for (let k = 0; k < 7; k += 1) {
+    const t = dayTotals(addDays(ws, k));
+    eaten += t.cal;
+    if (t.n > 0) logDays += 1;
+  }
+  const passed = daysBetween(ws, today());
+  const remain = 7 - passed;
+  const card = h('div', { class: 'card', style: 'margin-top:12px' }, h('div', { class: 'eyebrow', style: 'margin-bottom:10px', text: 'THIS WEEK (MON TO SUN)' }));
+  if (!(tg.calories > 0)) {
+    card.appendChild(h('div', { class: 'muted', text: fmt(eaten) + ' cal eaten over ' + logDays + ' logged day' + (logDays === 1 ? '' : 's') + '. Set a calorie target to see your weekly budget.' }));
+    return card;
+  }
+  const budget = tg.calories * 7;
+  const left = budget - eaten;
+  const per = remain > 0 ? left / remain : 0;
+  const pct = Math.min(100, budget ? (eaten / budget) * 100 : 0);
+  card.appendChild(h('div', { class: 'tiles three' },
+    h('div', { class: 'tile' }, h('b', { text: fmt(eaten) }), h('span', { text: 'EATEN' })),
+    h('div', { class: 'tile' }, h('b', { text: fmt(budget) }), h('span', { text: 'BUDGET' })),
+    h('div', { class: 'tile' }, h('b', { text: (left < 0 ? '+' : '') + fmt(Math.abs(left)) }), h('span', { text: left < 0 ? 'OVER' : 'LEFT' }))
+  ));
+  card.appendChild(h('div', { class: 'bar' }, h('i', { style: 'width:' + pct + '%;background:' + (left < 0 ? '#f87171' : '#39d353') })));
+  const note = left < 0
+    ? 'Over the weekly budget by ' + fmt(-left) + ' cal. Pull the rest of the week down or accept it.'
+    : remain > 0 ? 'About ' + fmt(per) + ' cal per day for the ' + remain + ' day' + (remain === 1 ? '' : 's') + ' left, today included.' : 'Week is over.';
+  card.appendChild(h('div', { class: 'muted', style: 'margin-top:8px', text: note }));
+  return card;
 }
 
 /* targets, account */
@@ -1616,11 +1840,17 @@ function openAccount() {
     if (!armed) { armed = true; clear.textContent = 'tap again, this cannot be undone'; return; }
     if (await clearFoodData()) { closeSheet(); render(); toast('Food data deleted'); }
   });
+  const on = !!(state.share && state.share.share);
+  const shareBtn = h('button', { class: 'btn ghost', style: 'margin-top:8px', text: 'show PROTEIN HIT to homies in gym: ' + (on ? 'ON' : 'OFF') });
+  shareBtn.addEventListener('click', async () => {
+    if (await pushShare(!on)) { closeSheet(); render(); toast(on ? 'Sharing off' : 'Sharing on, only a yes or no is stored'); }
+  });
   openSheet([
     sheetHead(state.me.username),
     h('button', { class: 'btn ghost', onclick: () => { closeSheet(); openGoal(); }, text: 'goal weight and body stats' }),
     h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => { closeSheet(); openTargets(); }, text: 'daily targets' }),
     h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: exportLog, text: 'export food log (CSV)' }),
+    shareBtn,
     h('a', { class: 'btn ghost linkrow', href: '/gym/', text: 'open the gym app' }),
     h('button', { class: 'btn ghost', style: 'margin-top:8px', onclick: () => { closeSheet(); logout(); }, text: 'switch user' }),
     h('div', { class: 'muted', style: 'margin:12px 0 6px;font-size:11px', text: 'You are logged in to the gym app and this one with the same account. Switching user here switches it there too.' }),
