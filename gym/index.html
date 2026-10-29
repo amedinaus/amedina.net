@@ -2256,8 +2256,8 @@ function closeChat() {
 
 /* training days (lifting or other activity) */
 
-const ACT_KINDS = ['Run', 'Walk', 'Bike', 'Swim', 'Sports', 'Mobility', 'Other'];
-
+const ACT_KINDS = ['Run', 'Walk', 'Hike', 'Bike', 'Swim', 'Sports', 'Mobility', 'Other'];
+ 
 function trainDays(pid) {
   const s = new Set();
   (state.byUser[pid] || []).forEach((r) => { if (!isWarm(r)) s.add(r.date); });
@@ -2296,7 +2296,7 @@ function openActivity(a) {
   let kind = a ? a.kind : 'Run';
   const chips = h('div', { class: 'chiprow' });
   const draw = () => {
-    chips.replaceChildren(ACT_KINDS.map((k) => h('button', {
+    chips.replaceChildren(...ACT_KINDS.map((k) => h('button', {
       class: 'chip' + (k === kind ? ' on' : ''),
       onclick: () => { kind = k; draw(); },
       text: k
@@ -2326,7 +2326,6 @@ function openActivity(a) {
   }
   openSheet(body);
 }
-
 /* repeat a past session */
 
 function lastRoutineSession(r, before) {
