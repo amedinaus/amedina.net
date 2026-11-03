@@ -953,11 +953,11 @@ function addExercise(name) {
 
 function loadRoutine(r) {
   if (state.extraDate !== state.logDate) { state.extraDate = state.logDate; state.extra = []; }
-  r.exercises.forEach((n) => { if (!state.extra.some((x) => key(x) === key(n))) state.extra.push(n); });
+  /* only suggest: exercises are added one tap at a time from the Log tab */
   state.restDay = '';
   state.loadedRoutine = { id: r.id, date: state.logDate };
   render();
-  toast(r.name + ' loaded');
+  toast(r.name + ': tap exercises to add');
   if (state.logDate === today()) advanceRotation(r.id);
 }
 
@@ -2257,7 +2257,7 @@ function closeChat() {
 /* training days (lifting or other activity) */
 
 const ACT_KINDS = ['Run', 'Walk', 'Hike', 'Bike', 'Swim', 'Sports', 'Mobility', 'Other'];
- 
+
 function trainDays(pid) {
   const s = new Set();
   (state.byUser[pid] || []).forEach((r) => { if (!isWarm(r)) s.add(r.date); });
@@ -2326,6 +2326,7 @@ function openActivity(a) {
   }
   openSheet(body);
 }
+
 /* repeat a past session */
 
 function lastRoutineSession(r, before) {
@@ -2928,8 +2929,7 @@ function exCard(name, k, rows) {
   else if (rows.length) {
     const l = rows[rows.length - 1];
     def = { w: dw(l.weight), r: String(l.reps), rpe: l.rpe != null ? String(l.rpe) : '', type: l.set_type };
-  } else if (sug) def = { w: fmtW(sug.w), r: String(sug.r), rpe: '', type: 'working' };
-  else def = { w: '', r: '', rpe: '', type: 'working' };
+  } else def = { w: '', r: '', rpe: '', type: 'working' };
   let type = def.type || 'working';
 
   const wIn = h('input', { type: 'number', inputmode: 'decimal', step: 'any', min: '0', placeholder: '0', value: def.w, 'data-wk': k });
@@ -3043,6 +3043,7 @@ function renderLog() {
   const isToday = date === today();
   const myRoutines = state.routines.filter((r) => r.profile_id === state.me.id);
   const plan = planFor(state.me.id, date);
+  const sugg = state.loadedRoutine && state.loadedRoutine.date === date ? state.routineById[state.loadedRoutine.id] : null;
 
   const wrap = h('div', { class: 'fade' });
   wrap.appendChild(h('div', { class: 'eyebrow', text: 'LOG' }));
@@ -3064,7 +3065,7 @@ function renderLog() {
       h('div', null, h('small', { text: 'REST DAY' }), h('b', { text: 'Recover. Come back stronger.' })),
       h('button', { class: 'btn sm', onclick: () => { state.restDay = ''; render(); }, text: 'train anyway' })
     ));
-  } else if (!order.length && myRoutines.length) {
+  } else if (!order.length && !sugg && myRoutines.length) {
     const rotation = scheduleMode(state.me.id) === 'rotation';
     const plannedRest = hasSchedule(state.me.id) && !plan.routine;
     if (plan.routine) {
@@ -3074,11 +3075,7 @@ function renderLog() {
           h('b', { text: plan.routine.name })
         ),
         h('div', { class: 'btnstack' },
-          h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'start' }),
-          (() => {
-            const ls = lastRoutineSession(plan.routine, date);
-            return ls ? h('button', { class: 'btn sm ghost', onclick: () => { loadRoutine(plan.routine); repeatSession(ls); }, text: 'repeat ' + shortDate(ls.date) }) : null;
-          })()
+          h('button', { class: 'btn sm', onclick: () => loadRoutine(plan.routine), text: 'start' })
         )
       ));
     }
@@ -3098,13 +3095,13 @@ function renderLog() {
     ));
   }
 
-  if (!rows.length && state.loadedRoutine && state.loadedRoutine.date === date) {
-    const lr = state.routineById[state.loadedRoutine.id];
-    const ls = lr ? lastRoutineSession(lr, date) : null;
-    if (ls) {
-      wrap.appendChild(h('div', { class: 'banner' },
-        h('div', null, h('small', { text: 'SAME AS LAST TIME?' }), h('b', { text: lr.name + ', ' + shortDate(ls.date) })),
-        h('button', { class: 'btn sm', onclick: () => repeatSession(ls), text: 'log same sets' })
+  if (sugg) {
+    const left = sugg.exercises.filter((n) => !order.some((o) => o.k === key(n)));
+    if (left.length) {
+      wrap.appendChild(h('div', { class: 'chiprow suggrow' },
+        h('span', { class: 'muted', text: sugg.name + ':' }),
+        left.map((n) => h('button', { class: 'chip', onclick: () => addExercise(n), text: '+ ' + n })),
+        h('button', { class: 'chip', onclick: () => { state.loadedRoutine = null; render(); }, text: 'hide' })
       ));
     }
   }
@@ -3116,7 +3113,7 @@ function renderLog() {
   ));
   const sline = sessionLine(date);
   if (sline) wrap.appendChild(h('div', { class: 'hint', id: sline.live ? 'sessClock' : null, text: sline.txt }));
-  if (!order.length) {
+  if (!order.length && !sugg) {
     wrap.appendChild(emptyCard('Empty session', 'Add an exercise, enter weight, reps and RPE, hit +. The 3:00 rest timer starts on its own.'));
   }
   order.forEach((o) => wrap.appendChild(exCard(o.name, o.k, rows.filter((r) => key(r.exercise) === o.k))));
@@ -3587,6 +3584,18 @@ function bestE1(pid, k, start, end) {
   return best;
 }
 
+/* actual heaviest working set (not an estimate); ties go to more reps */
+function bestLift(pid, k) {
+  let best = null;
+  (state.byUser[pid] || []).forEach((r) => {
+    if (key(r.exercise) !== k || !qual(r)) return;
+    const w = Number(r.weight);
+    if (!(w > 0)) return;
+    if (!best || w > best.w || (w === best.w && r.reps > best.reps)) best = { w, reps: r.reps, r };
+  });
+  return best;
+}
+
 function statusPills(p) {
   const st = statusOf(p);
   const out = [];
@@ -3769,7 +3778,7 @@ function renderCrew() {
     names[k].n += 1;
   });
   const exs = Object.values(names).sort((a, b) => b.n - a.n);
-  sink.appendChild(h('h2', null, 'Lift board', h('small', { text: 'BEST ESTIMATED 1RM' })));
+  sink.appendChild(h('h2', null, 'Lift board', h('small', { text: 'HEAVIEST SET LIFTED' })));
   const lift = h('div', { class: 'card' });
   if (!exs.length) {
     lift.appendChild(h('div', { class: 'muted', text: 'No working sets logged yet.' }));
@@ -3779,17 +3788,18 @@ function renderCrew() {
       exs.map((e) => h('option', { value: e.k, selected: e.k === state.liftKey, text: e.name }))));
     lift.appendChild(seg([['e1rm', 'heaviest'], ['rel', 'per bodyweight']], state.liftSort, (v) => { state.liftSort = v; render(); }));
     const list = state.profiles.map((p) => {
-      const b = bestE1(p.id, state.liftKey);
+      const b = bestLift(p.id, state.liftKey);
       const bw = state.bwLatest[p.id] ? Number(state.bwLatest[p.id].weight) : null;
-      return { p, b, rel: b && bw ? b.e / bw : null };
+      return { p, b, rel: b && bw ? b.w / bw : null };
     }).filter((x) => x.b);
     const sortKey = state.liftSort === 'rel' ? 'rel' : null;
-    list.sort((a, b) => (sortKey ? (b.rel || 0) - (a.rel || 0) : b.b.e - a.b.e));
-    const topv = list.length ? Math.max(sortKey ? (list[0].rel || 1) : list[0].b.e, 0.0001) : 1;
+    list.sort((a, b) => (sortKey ? (b.rel || 0) - (a.rel || 0) : b.b.w - a.b.w));
+    const topv = list.length ? Math.max(sortKey ? (list[0].rel || 1) : list[0].b.w, 0.0001) : 1;
     list.forEach((x, i) => {
-      const val = sortKey ? (x.rel === null ? '-' : x.rel.toFixed(2) + 'x BW') : fmt(toDisp(x.b.e)) + ' ' + unit();
-      const sub = sortKey ? fmt(toDisp(x.b.e)) + ' ' + unit() : (x.rel !== null ? x.rel.toFixed(2) + 'x BW' : null);
-      const frac = sortKey ? ((x.rel || 0) / topv) : (x.b.e / topv);
+      const set = fmt(toDisp(x.b.w)) + ' ' + unit() + ' x ' + x.b.reps;
+      const val = sortKey ? (x.rel === null ? '-' : x.rel.toFixed(2) + 'x BW') : fmt(toDisp(x.b.w)) + ' ' + unit();
+      const sub = sortKey ? set : 'x ' + x.b.reps + (x.rel !== null ? ', ' + x.rel.toFixed(2) + 'x BW' : '');
+      const frac = sortKey ? ((x.rel || 0) / topv) : (x.b.w / topv);
       lift.appendChild(lbRow(i, x.p, val, sub, frac));
     });
   }
